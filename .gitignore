@@ -1,0 +1,6 @@
+/target
+/*.profraw
+/*.lcov
+/.releaserc
+/node_modules
+Cargo.lock
