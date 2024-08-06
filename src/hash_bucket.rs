@@ -13,22 +13,25 @@
 // limitations under the License.
 
 //! The `hash_bucket` module provides functionality for managing collections of hash bucket entries,
-//! which are pairs of hashed keywords and their associated values. This module includes methods for
-//! creating, serializing, and deserializing hash buckets, as well as utility functions for working
-//! with byte slices and hash values.
+//! which are pairs of hashed keywords and their associated values. Hash bucket entries are used by
+//! the `cuckoo_table` module to manage keyword-value pairs using cuckoo hashing. The main components are:
+//!
+//! - `HashBucketEntry`: Represents a single entry in a `HashBucket`, consisting of a hashed keyword and its associated value.
+//! - `HashBucket`: A collection of `HashBucketEntry` items.
+//! - `HashKeyword`: Provides utility functions for hashing keywords and generating hash indices.
 //!
 //! # Examples
 //!
 //! ```
-//! use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+//! use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry, HashKeyword};
 //! use eyre::Result;
 //!
 //! // Create a new hash bucket with some entries
 //! let entries = vec![
-//!     HashBucketEntry::new(0, vec![0, 1, 2]),
-//!     HashBucketEntry::new(1, vec![10, 11, 12]),
+//!     HashBucketEntry::new(HashKeyword::hash(b"example1"), vec![0, 1, 2]),
+//!     HashBucketEntry::new(HashKeyword::hash(b"example2"), vec![10, 11, 12]),
 //! ];
-//! let bucket = HashBucket::new(entries)?;
+//! let bucket = HashBucket::new(&entries)?;
 //! assert_eq!(bucket.slots.len(), 2);
 //!
 //! // Serialize and deserialize the bucket
@@ -38,12 +41,13 @@
 //! Ok::<(), eyre::Report>(())
 //! ```
 
+use crate::cuckoo_table::{CuckooBucket, CuckooBucketEntry};
 use eyre::Result;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 /// An error type for hash bucket operations.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum HashBucketError {
     /// An error indicating that the serialized `HashBucket` is empty when we try to deserialize it.
     #[error("Serialized HashBucket shouldn't be empty.")]
@@ -96,6 +100,17 @@ pub struct HashBucketEntry {
     pub keyword_hash: u64,
     /// A vector of bytes representing the value associated with the keyword.
     pub value: Vec<u8>,
+}
+
+impl From<&CuckooBucketEntry> for HashBucketEntry {
+    fn from(value: &CuckooBucketEntry) -> Self {
+        Self {
+            value: value.value.clone(),
+            // TODO: Get rid of .expect
+            keyword_hash: HashKeyword::le_bytes_to_u64(&value.keyword[..U64_SIZE])
+                .expect("Conversion may not fail"),
+        }
+    }
 }
 
 impl HashBucketEntry {
@@ -272,7 +287,7 @@ impl HashBucketEntry {
 ///     HashBucketEntry::new(0, vec![0, 1, 2]),
 ///     HashBucketEntry::new(1, vec![10, 11, 12]),
 /// ];
-/// let bucket = HashBucket::new(entries)?;
+/// let bucket = HashBucket::new(&entries)?;
 /// assert_eq!(bucket.slots.len(), 2);
 /// Ok::<(), eyre::Report>(())
 /// ```
@@ -282,9 +297,18 @@ pub struct HashBucket {
     pub slots: Vec<HashBucketEntry>,
 }
 
+impl From<&CuckooBucket> for HashBucket {
+    fn from(value: &CuckooBucket) -> Self {
+        let hash_bucket_entries: Vec<HashBucketEntry> =
+            value.slots.iter().map(HashBucketEntry::from).collect();
+        // TODO: Get rid of .expect
+        Self::new(&hash_bucket_entries).expect("Conversion may not fail")
+    }
+}
+
 impl HashBucket {
     /// The maximum number of slots (entries) allowed in a `HashBucket`.
-    const MAX_SLOT_COUNT: usize = u8::MAX as usize;
+    pub const MAX_SLOT_COUNT: usize = u8::MAX as usize;
 
     /// Creates a new `HashBucket` with the given list of `HashBucketEntry` items.
     ///
@@ -307,15 +331,15 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let slots = vec![HashBucketEntry::new(0, vec![1, 2, 3]), HashBucketEntry::new(1, vec![10, 20, 30])];
-    /// let bucket = HashBucket::new(slots)?;
+    /// let bucket = HashBucket::new(&slots)?;
     /// assert_eq!(bucket.slots.len(), 2);
     /// # Ok::<(), eyre::Report>(())
-    pub fn new(slots: Vec<HashBucketEntry>) -> Result<Self> {
+    pub fn new(slots: &[HashBucketEntry]) -> Result<Self> {
         if slots.len() > Self::MAX_SLOT_COUNT {
             return Err(HashBucketError::SlotCountExceedsMaximum.into());
         }
 
-        Ok(Self { slots })
+        Ok(Self { slots: slots.to_vec() })
     }
 
     /// Adds a new entry to the `HashBucket`.
@@ -330,7 +354,7 @@ impl HashBucket {
     /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
-    /// let mut bucket = HashBucket::new(vec![])?;
+    /// let mut bucket = HashBucket::new(&[])?;
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// bucket.add_entry(entry);
     /// assert_eq!(bucket.slots.len(), 1);
@@ -353,7 +377,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
-    /// let mut bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let mut bucket = HashBucket::new(&[entry.clone()])?;
     /// let hash = entry.keyword_hash;
     /// bucket.remove_entry_by_hash(hash);
     /// assert_eq!(bucket.slots.len(), 0);
@@ -380,7 +404,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
-    /// let bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let bucket = HashBucket::new(&[entry.clone()])?;
     /// let hash = entry.keyword_hash;
     /// assert!(bucket.contains_hash(hash));
     /// # Ok::<(), eyre::Report>(())
@@ -410,7 +434,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
-    /// let bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let bucket = HashBucket::new(&[entry.clone()])?;
     /// let serialized = bucket.serialize().unwrap();
     /// let deserialized = HashBucket::deserialize(&serialized).unwrap();
     /// assert_eq!(bucket, deserialized);
@@ -509,7 +533,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
-    /// let bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let bucket = HashBucket::new(&[entry.clone()])?;
     /// let serialized = bucket.serialize()?;
     /// assert!(!serialized.is_empty());
     /// Ok::<(), eyre::Report>(())
@@ -545,7 +569,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
-    /// let bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let bucket = HashBucket::new(&[entry.clone()])?;
     /// let value = bucket.find(b"Hello");
     /// assert_eq!(value, None);
     /// # Ok::<(), eyre::Report>(())
@@ -572,7 +596,7 @@ impl HashBucket {
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
-    /// let bucket = HashBucket::new(vec![entry.clone()])?;
+    /// let bucket = HashBucket::new(&[entry.clone()])?;
     /// let value = bucket.find_by_hash(123456789);
     /// assert_eq!(value, Some(vec![1, 2, 3]));
     /// # Ok::<(), eyre::Report>(())
@@ -645,7 +669,7 @@ impl HashKeyword {
     ///
     /// # Returns
     ///
-    /// An array of indices, which are the possible locations for the `keyword` in a `cuckoo hash table, `CuckooTable`.
+    /// An array of indices, which are the possible locations for the `keyword` in the `CuckooTable`.
     ///
     /// # Errors
     ///
@@ -680,9 +704,9 @@ impl HashKeyword {
 
             // If we've reached the maximum number of retries, return an error
             // Note: This is a deviation from the original implementation, which would return the last index generated.
-            if counter == Self::MAX_RETRIES {
-                return Err(HashBucketError::FailedToGenerateUniqueIndex(Self::MAX_RETRIES).into());
-            }
+            // if counter == Self::MAX_RETRIES {
+            //     return Err(HashBucketError::FailedToGenerateUniqueIndex(Self::MAX_RETRIES).into());
+            // }
 
             candidates.push(bucket_index);
         }
@@ -722,7 +746,16 @@ impl HashKeyword {
         Ok(index)
     }
 
-    fn le_bytes_to_u64(bytes: &[u8]) -> Result<u64, std::array::TryFromSliceError> {
+    /// Converts a slice of little-endian bytes to a `u64`.
+    ///
+    /// # Parameters
+    ///
+    /// * `bytes` - A slice of bytes representing a little-endian `u64`.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the `u64` value on success, or a `TryFromSliceError` if the conversion fails.
+    pub fn le_bytes_to_u64(bytes: &[u8]) -> Result<u64, std::array::TryFromSliceError> {
         let array: [u8; U64_SIZE] = bytes.try_into()?;
         Ok(u64::from_le_bytes(array))
     }
@@ -749,7 +782,7 @@ mod tests {
     fn get_test_bucket() -> HashBucket {
         let count = rand::thread_rng().gen_range(1..=10);
         let slots: Vec<HashBucketEntry> = (0..count).map(|_| get_test_entry()).collect();
-        HashBucket::new(slots).unwrap()
+        HashBucket::new(&slots).unwrap()
     }
 
     #[test]
