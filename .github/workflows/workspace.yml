@@ -35,11 +35,11 @@ jobs:
       - run: cargo fmt --all -- --check
 #      - uses: bnjbvr/cargo-machete@main
       - name: Install cargo-sort
-        uses: baptiste0928/cargo-install@v1
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-sort
       - name: Install taplo
-        uses: baptiste0928/cargo-install@v1
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: taplo-cli
       - run: taplo fmt --check
