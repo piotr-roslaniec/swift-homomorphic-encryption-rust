@@ -12,12 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
-
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
-
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
+pub struct EncryptionParameters {}

@@ -12,12 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+//! Private Information Retrieval (PIR) module.
+// TODO: Add module documentation
+// TODO: Update crate visibility
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
+pub mod cuckoo_table;
+pub(crate) mod error;
+pub mod hash_bucket;
+pub(crate) mod index_pir_protocol;
+pub mod keyword_database;
+pub(crate) mod keyword_pir_protocol;
+pub(crate) mod mul_pir;
 
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
+#[cfg(test)]
+mod pir_test_utils;

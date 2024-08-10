@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
+use crate::homomorphic_encryption::he_scheme::HeScheme;
+use crate::homomorphic_encryption::keys::EvaluationKeyConfiguration;
+use crate::private_information_retrieval::index_pir_protocol::IndexPirParameter;
+use std::marker::PhantomData;
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
+pub enum MulPir<Scheme> {
+    _Phantom(PhantomData<Scheme>),
+}
 
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
+impl<Scheme: HeScheme> MulPir<Scheme> {
+    pub fn evaluation_key_configuration(
+        _parameter: &IndexPirParameter,
+        _encryption_parameters: &EncryptionParameters,
+    ) -> EvaluationKeyConfiguration {
+        todo!()
+    }
+}

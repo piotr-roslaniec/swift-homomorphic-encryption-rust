@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
+use crate::homomorphic_encryption::he_scheme::HeScheme;
+use std::marker::PhantomData;
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
+/// Pre-computation for the HE operations.
+///
+/// HE operations are typically only supported between objects, such as ``Ciphertext``, ``Plaintext``,
+/// ``EvaluationKey``, ``SecretKey``,  with the same context.
+pub struct Context<Scheme: HeScheme> {
+    _marker: PhantomData<Scheme>,
+}
 
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
+impl<Scheme: HeScheme> Context<Scheme> {
+    /// Creates a new `Context`.
+    pub fn new(_encryption_parameters: &EncryptionParameters) -> Self {
+        todo!()
+    }
+}

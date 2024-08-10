@@ -12,12 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+use crate::homomorphic_encryption::context::Context;
+use crate::homomorphic_encryption::keys::SecretKey;
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
+pub trait HeScheme: Sized {
+    type CanonicalCiphertext;
 
-pub mod private_information_retrieval;
+    /// Generates a `SecretKey`.
+    ///
+    /// # Parameters
+    ///
+    /// - `context`: Context for the HE computations.
+    ///
+    /// # Returns
+    ///
+    /// A `SecretKey` for the given `Context`.
+    ///
+    fn generate_secret_key(_context: &Context<Self>) -> SecretKey<Self> {
+        todo!()
+    }
 
-pub(crate) mod homomorphic_encryption;
+    /// The minimum level of "noise budget" required to guarantee a successful decryption.
+    fn min_noise_budget() -> f64 {
+        todo!()
+    }
+}

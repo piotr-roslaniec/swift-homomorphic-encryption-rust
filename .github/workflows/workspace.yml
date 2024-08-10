@@ -33,7 +33,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
       - run: cargo clippy --all --all-features -- -D warnings
       - run: cargo fmt --all -- --check
-#      - uses: bnjbvr/cargo-machete@main
+      #      - uses: bnjbvr/cargo-machete@main
       - name: Install cargo-sort
         uses: baptiste0928/cargo-install@v3
         with:
@@ -43,7 +43,10 @@ jobs:
         with:
           crate: taplo-cli
       - run: taplo fmt --check
-
+      - name: Install license-header-checker
+        run: curl -s https://raw.githubusercontent.com/lluissm/license-header-checker/master/install.sh | bash
+      - name: Run license check
+        run: ./bin/license-header-checker -a -r -i target ./copyright-header.txt . rs
   test:
     runs-on: ubuntu-latest
     needs: [ check ]

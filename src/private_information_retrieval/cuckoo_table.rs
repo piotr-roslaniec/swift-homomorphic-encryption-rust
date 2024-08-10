@@ -34,36 +34,38 @@
 //!
 //! The implementation of hash table entries, `CuckooBucketEntry`, is taken from the `hash_bucket` module.
 
-use crate::hash_bucket::{HashBucket, HashBucketError, HashKeyword};
-use crate::scalar::dividing_ceil;
+use crate::homomorphic_encryption::scalar::dividing_ceil;
+use crate::private_information_retrieval::error::PirError;
+use crate::private_information_retrieval::hash_bucket::{HashBucket, HashKeyword};
+use crate::private_information_retrieval::keyword_database::{Keyword, KeywordValue};
 use eyre::Result;
 use rand::seq::SliceRandom;
 use rand_core::RngCore;
 use std::fmt;
 use thiserror::Error;
 
-/// An error type for `CuckooTable`.
+/// Cuckoo table config errors.
 #[derive(Debug, Clone, Error, PartialEq)]
 pub enum CuckooTableConfigError {
     /// Invalid hash function count. Must be greater than 0.
     #[error("Invalid hash function count")]
     InvalidHashFunctionCount,
 
-    /// Invalid maximum serialized bucket size. Must be greater than zero and less than `HashBucket::serialized_size_with_value_size(0)`
+    /// Invalid maximum serialized bucket size. Must be greater than zero and less than `HashBucket::serialized_size_with_value_size(0)`.
     #[error("Invalid maximum serialized bucket size")]
     InvalidMaxSerializedBucketSize,
 
-    /// Invalid expansion factor. Must be greater than 1.0.
-    #[error("Invalid expansion factor")]
-    InvalidExpansionFactor,
+    /// Expansion factor must be greater than 1.0.
+    #[error("Expansion factor too low")]
+    ExpansionFactorTooLow,
 
-    /// Invalid target load factor. Must be less than 1.0.
-    #[error("Invalid target load factor")]
-    InvalidTargetLoadFactor,
+    /// Target load factor must be less than 1.0.
+    #[error("Target load factor too high")]
+    TargetLoadFactorTooHigh,
 
-    /// Invalid bucket count. Must be greater than zero.
-    #[error("Invalid bucket count")]
-    InvalidBucketCount,
+    /// Bucket count must be greater than zero.
+    #[error("Bucket count must be positive")]
+    BucketCountMustBePositive,
 }
 
 /// Configuration for the number of buckets in `CuckooTable`.
@@ -101,9 +103,9 @@ pub struct CuckooTableConfig {
     /// Configuration for the number of buckets in the cuckoo table.
     pub bucket_count: BucketCountConfig,
     /// Whether to use multiple tables.
-    /// If `true`, `hash_function_count` tables are used, each with `bucket_count` buckets.
-    /// If `false`, a single table is used with `hash_function_count * bucket_count` buckets.
-    /// Defaults to `false`.
+    /// - If `true`, `hash_function_count` tables are used, each with `bucket_count` buckets.
+    /// - If `false`, a single table is used with `hash_function_count * bucket_count` buckets.
+    /// - Defaults to `false`.
     pub multiple_tables: bool,
 }
 
@@ -112,10 +114,10 @@ impl CuckooTableConfig {
     ///
     /// # Parameters
     ///
-    /// * `hash_function_count`: Number of hash functions to use.
-    /// * `max_eviction_count`: Maximum number of evictions to perform when inserting a new entry.
-    /// * `max_serialized_bucket_size`: Maximum size of a serialized bucket, in bytes.
-    /// * `bucket_count`: Number of buckets in the cuckoo table.
+    /// - `hash_function_count`: Number of hash functions to use.
+    /// - `max_eviction_count`: Maximum number of evictions to perform when inserting a new entry.
+    /// - `max_serialized_bucket_size`: Maximum size of a serialized bucket, in bytes.
+    /// - `bucket_count`: Number of buckets in the cuckoo table.
     ///
     pub fn new(
         hash_function_count: usize,
@@ -139,8 +141,8 @@ impl CuckooTableConfig {
     ///
     /// # Parameters
     ///
-    /// * max_serialized_bucket_size: The maximum number of evictions when inserting a new entry.
-    /// * bucket_count: The number of buckets in the cuckoo table.
+    /// - max_serialized_bucket_size: The maximum number of evictions when inserting a new entry.
+    /// - bucket_count: The number of buckets in the cuckoo table.
     ///
     /// # Returns
     ///
@@ -163,7 +165,7 @@ impl CuckooTableConfig {
     ///
     /// # Errors
     ///
-    /// * If the configuration is invalid.
+    /// - If the configuration is invalid.
     fn validate(&self) -> Result<()> {
         if self.hash_function_count == 0 {
             return Err(CuckooTableConfigError::InvalidHashFunctionCount.into());
@@ -177,27 +179,21 @@ impl CuckooTableConfig {
         match &self.bucket_count {
             BucketCountConfig::AllowExpansion { expansion_factor, target_load_factor } => {
                 if *expansion_factor <= 1.0 {
-                    return Err(CuckooTableConfigError::InvalidExpansionFactor.into());
+                    return Err(CuckooTableConfigError::ExpansionFactorTooLow.into());
                 }
                 if *target_load_factor >= 1.0 {
-                    return Err(CuckooTableConfigError::InvalidTargetLoadFactor.into());
+                    return Err(CuckooTableConfigError::TargetLoadFactorTooHigh.into());
                 }
             },
             BucketCountConfig::FixedSize { bucket_count } => {
                 if *bucket_count > 0 {
-                    return Err(CuckooTableConfigError::InvalidBucketCount.into());
+                    return Err(CuckooTableConfigError::BucketCountMustBePositive.into());
                 }
             },
         }
         Ok(())
     }
 }
-
-// TODO: Move KeywordValuePair definition to keyword_database.rs
-/// Represents a keyword in a keyword-value pair.
-pub type Keyword = Vec<u8>;
-/// Represents a value in a keyword-value pair.
-pub type KeywordValue = Vec<u8>;
 
 /// A single entry in a cuckoo bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -215,12 +211,9 @@ impl CuckooBucketEntry {
     }
 }
 
+/// Cuckoo table errors.
 #[derive(Error, Debug, Clone, PartialEq)]
-enum CuckooTableError {
-    /// Hash bucket error.
-    #[error("Hash bucket error")]
-    HashBucketError(HashBucketError),
-
+pub enum CuckooTableError {
     /// Size of the inserted entry exceeds the maximum serialized bucket size.
     #[error("Entry exceeds maximum bucket size")]
     EntryExceedsMaxBucketSize,
@@ -261,15 +254,15 @@ impl CuckooBucket {
 
     /// Returns the serialized representation of the bucket.
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        HashBucket::from(self).serialize().map_err(|e| CuckooTableError::HashBucketError(e).into())
+        HashBucket::from(self).serialize().map_err(|e| PirError::HashBucket(e).into())
     }
 
     /// Returns whether a new value can be inserted into the bucket.
     ///
     /// # Parameters
     ///
-    /// * `value`: The value to insert.
-    /// * `config`: The cuckoo table configuration.
+    /// - `value`: The value to insert.
+    /// - `config`: The cuckoo table configuration.
     ///
     pub fn can_insert(&self, value: &KeywordValue, config: &CuckooTableConfig) -> bool {
         if self.slots.len() >= HashBucket::MAX_SLOT_COUNT {
@@ -284,8 +277,8 @@ impl CuckooBucket {
     ///
     /// # Parameters
     ///
-    /// * `new_value`: The value to insert.
-    /// * `config`: The cuckoo table configuration.
+    /// - `new_value`: The value to insert.
+    /// - `config`: The cuckoo table configuration.
     ///
     pub fn swap_indices(&self, new_value: &Vec<u8>, config: &CuckooTableConfig) -> Vec<usize> {
         let current_values: Vec<&Vec<u8>> = self.slots.iter().map(|entry| &entry.value).collect();
@@ -379,9 +372,9 @@ impl CuckooTable {
     ///
     /// # Parameters
     ///
-    /// * `config`: The configuration for the cuckoo table.
-    /// * `database`: The initial database to insert into the cuckoo table.
-    /// * `rng`: The random number generator to use.
+    /// - `config`: The configuration for the cuckoo table.
+    /// - `database`: The initial database to insert into the cuckoo table.
+    /// - `rng`: The random number generator to use.
     ///
     /// # Returns
     ///
@@ -441,12 +434,12 @@ impl CuckooTable {
     ///
     /// # Parameters
     ///
-    /// * `new_entry`: The entry to insert.
+    /// - `new_entry`: The entry to insert.
     ///
     /// # Errors
     ///
-    /// * If the entry exceeds the maximum bucket size.
-    /// * If the table cannot be expanded.
+    /// - If the entry exceeds the maximum bucket size.
+    /// - If the table cannot be expanded.
     pub fn insert(&mut self, new_entry: &CuckooBucketEntry) -> Result<()> {
         if HashBucket::serialized_size_with_value_size(new_entry.value.len())
             > self.config.max_serialized_bucket_size
@@ -530,8 +523,8 @@ impl CuckooTable {
     ///
     /// # Parameters
     ///
-    /// * `table_index`: The index of the table.
-    /// * `hash_index`: The index of the hash, provided by `HashKeyword::hash_indices`.
+    /// - `table_index`: The index of the table.
+    /// - `hash_index`: The index of the hash, provided by `HashKeyword::hash_indices`.
     ///
     /// # Returns
     ///
@@ -550,8 +543,8 @@ impl CuckooTable {
     ///
     /// # Errors
     ///
-    /// * If the cuckoo table is not configured to allow expansion.
-    /// * If the cuckoo table cannot be expanded due to an insertion error.
+    /// - If the cuckoo table is not configured to allow expansion.
+    /// - If the cuckoo table cannot be expanded due to an insertion error.
     pub fn expand(&mut self) -> Result<()> {
         match self.config.bucket_count {
             BucketCountConfig::AllowExpansion { expansion_factor, .. } => {
@@ -575,7 +568,7 @@ impl CuckooTable {
     ///
     /// # Parameters
     ///
-    /// * `keyword`: The keyword to look up.
+    /// - `keyword`: The keyword to look up.
     ///
     /// # Returns
     ///
@@ -583,7 +576,7 @@ impl CuckooTable {
     ///
     /// # Errors
     ///
-    /// * If the keyword is not found.
+    /// - If the keyword is not found.
     pub fn get(&self, keyword: &Keyword) -> Result<Option<&Vec<u8>>> {
         let indices = HashKeyword::hash_indices(
             keyword,
@@ -635,39 +628,11 @@ impl CuckooTable {
 
 #[cfg(test)]
 mod tests {
-    use crate::cuckoo_table::*;
-    use crate::hash_bucket::HashKeyword;
+    use crate::private_information_retrieval::cuckoo_table::*;
+    use crate::private_information_retrieval::hash_bucket::HashKeyword;
+    use crate::private_information_retrieval::pir_test_utils::get_test_table;
     use rand::rngs::StdRng;
     use rand_core::SeedableRng;
-    use std::collections::HashSet;
-
-    use rand::Rng;
-
-    fn generate_random_data<R: Rng>(size: usize, rng: &mut R) -> Vec<u8> {
-        (0..size).map(|_| rng.gen()).collect()
-    }
-
-    fn get_test_table<R: Rng>(
-        row_count: usize,
-        value_size: usize,
-        rng: &mut R,
-    ) -> Vec<(Vec<u8>, Vec<u8>)> {
-        let keyword_size = 30;
-        let mut keywords = HashSet::new();
-        let mut rows = Vec::with_capacity(row_count);
-
-        while rows.len() < row_count {
-            let keyword = generate_random_data(keyword_size, rng);
-            if keywords.contains(&keyword) {
-                continue;
-            }
-            keywords.insert(keyword.clone());
-            let value = generate_random_data(value_size, rng);
-            rows.push((keyword, value));
-        }
-
-        rows
-    }
 
     fn get_test_cuckoo_table_config(max_serialized_bucket_size: usize) -> CuckooTableConfig {
         CuckooTableConfig {

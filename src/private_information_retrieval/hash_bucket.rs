@@ -23,7 +23,7 @@
 //! # Examples
 //!
 //! ```
-//! use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry, HashKeyword};
+//! use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry, HashKeyword};
 //! use eyre::Result;
 //!
 //! // Create a new hash bucket with some entries
@@ -41,7 +41,7 @@
 //! Ok::<(), eyre::Report>(())
 //! ```
 
-use crate::cuckoo_table::{CuckooBucket, CuckooBucketEntry};
+use crate::private_information_retrieval::cuckoo_table::{CuckooBucket, CuckooBucketEntry};
 use eyre::Result;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -89,7 +89,7 @@ pub type HashBucketValue = Vec<u8>;
 /// # Examples
 ///
 /// ```
-/// use swift_homomorphic_encryption_rust::hash_bucket::HashBucketEntry;
+/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucketEntry;
 ///
 /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
 /// assert_eq!(entry.keyword_hash, 123456789);
@@ -121,13 +121,13 @@ impl HashBucketEntry {
     ///
     /// # Arguments
     ///
-    /// * `keyword_hash` - A 64-bit hash of the keyword.
-    /// * `value` - A vector of bytes representing the value associated with the keyword.
+    /// - `keyword_hash` - A 64-bit hash of the keyword.
+    /// - `value` - A vector of bytes representing the value associated with the keyword.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashBucketEntry;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucketEntry;
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
     /// assert_eq!(entry.keyword_hash, 123456789);
@@ -141,8 +141,8 @@ impl HashBucketEntry {
     ///
     /// # Arguments
     ///
-    /// * `buffer` - A slice of bytes containing the serialized `HashBucketEntry`.
-    /// * `offset` - A mutable reference to the current offset in the buffer. It will be updated to the next offset after deserialization.
+    /// - `buffer` - A slice of bytes containing the serialized `HashBucketEntry`.
+    /// - `offset` - A mutable reference to the current offset in the buffer. It will be updated to the next offset after deserialization.
     ///
     /// # Returns
     ///
@@ -155,7 +155,7 @@ impl HashBucketEntry {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucketEntry, HashBucketError};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucketEntry, HashBucketError};
     /// use eyre::Result;
     ///
     /// let buffer = vec![1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 2, 3];
@@ -210,7 +210,7 @@ impl HashBucketEntry {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucketEntry, HashBucketError};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucketEntry, HashBucketError};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
@@ -233,7 +233,7 @@ impl HashBucketEntry {
     ///
     /// # Arguments
     ///
-    /// * `value` - A slice of bytes representing the value.
+    /// - `value` - A slice of bytes representing the value.
     ///
     /// # Returns
     ///
@@ -242,7 +242,7 @@ impl HashBucketEntry {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashBucketEntry;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucketEntry;
     ///
     /// let size = HashBucketEntry::serialized_size(&[1, 2, 3]);
     /// assert_eq!(size, 13);
@@ -255,7 +255,7 @@ impl HashBucketEntry {
     ///
     /// # Arguments
     ///
-    /// * `value_size` - The size of the value in bytes.
+    /// - `value_size` - The size of the value in bytes.
     ///
     /// # Returns
     ///
@@ -264,7 +264,7 @@ impl HashBucketEntry {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashBucketEntry;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucketEntry;
     ///
     /// let size = HashBucketEntry::serialized_size_with_value_size(3);
     /// assert_eq!(size, 13);
@@ -280,7 +280,7 @@ impl HashBucketEntry {
 /// # Examples
 ///
 /// ```
-/// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
 /// use eyre::Result;
 ///
 /// let entries = vec![
@@ -314,7 +314,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `slots` - A list of `HashBucketEntry` items to be added to the bucket.
+    /// - `slots` - A list of `HashBucketEntry` items to be added to the bucket.
     ///
     /// # Returns
     ///
@@ -327,7 +327,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let slots = vec![HashBucketEntry::new(0, vec![1, 2, 3]), HashBucketEntry::new(1, vec![10, 20, 30])];
@@ -346,12 +346,12 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `entry` - A `HashBucketEntry` to be added to the bucket.
+    /// - `entry` - A `HashBucketEntry` to be added to the bucket.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let mut bucket = HashBucket::new(&[])?;
@@ -368,12 +368,12 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `hash` - A `u64` representing the hashed key of the entry to be removed.
+    /// - `hash` - A `u64` representing the hashed key of the entry to be removed.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -395,12 +395,12 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `hash` - A `u64` representing the hashed key to check for.
+    /// - `hash` - A `u64` representing the hashed key to check for.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -417,7 +417,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `raw_bucket` - A slice of bytes representing the serialized `HashBucket`.
+    /// - `raw_bucket` - A slice of bytes representing the serialized `HashBucket`.
     ///
     /// # Returns
     ///
@@ -430,7 +430,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -464,7 +464,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `values` - A slice of vectors of bytes representing the values.
+    /// - `values` - A slice of vectors of bytes representing the values.
     ///
     /// # Returns
     ///
@@ -473,7 +473,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashBucket;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucket;
     ///
     /// let values = vec![vec![1, 2, 3], vec![4, 5, 6]];
     /// let size = HashBucket::serialized_size(&values);
@@ -488,7 +488,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `single_value_size` - The size of the single value in bytes.
+    /// - `single_value_size` - The size of the single value in bytes.
     ///
     /// # Returns
     ///
@@ -497,7 +497,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashBucket;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashBucket;
     ///
     /// let size = HashBucket::serialized_size_with_value_size(3);
     /// assert!(size > 0);
@@ -529,7 +529,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -556,7 +556,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `keyword` - A slice of bytes representing the original key to search for.
+    /// - `keyword` - A slice of bytes representing the original key to search for.
     ///
     /// # Returns
     ///
@@ -565,7 +565,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -583,7 +583,7 @@ impl HashBucket {
     ///
     /// # Arguments
     ///
-    /// * `hash` - A 64-bit hash representing the key to search for.
+    /// - `hash` - A 64-bit hash representing the key to search for.
     ///
     /// # Returns
     ///
@@ -592,7 +592,7 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::{HashBucket, HashBucketEntry};
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
@@ -612,7 +612,7 @@ impl HashBucket {
 /// # Examples
 ///
 /// ```
-/// use swift_homomorphic_encryption_rust::hash_bucket::HashKeyword;
+/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
 /// use eyre::Result;
 ///
 /// let keyword = b"example";
@@ -634,7 +634,7 @@ impl HashKeyword {
     ///
     /// # Arguments
     ///
-    /// * `keyword` - A slice of bytes representing the keyword to be hashed.
+    /// - `keyword` - A slice of bytes representing the keyword to be hashed.
     ///
     /// # Returns
     ///
@@ -643,7 +643,7 @@ impl HashKeyword {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashKeyword;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     ///
     /// let hash = HashKeyword::hash(b"example");
     /// assert!(hash > 0);
@@ -663,9 +663,9 @@ impl HashKeyword {
     ///
     /// # Arguments
     ///
-    /// * `keyword` - The keyword to hash.
-    /// * `bucket_count` - The total number of buckets.
-    /// * `hash_function_count` - A number of candidate indices to generate.
+    /// - `keyword` - The keyword to hash.
+    /// - `bucket_count` - The total number of buckets.
+    /// - `hash_function_count` - A number of candidate indices to generate.
     ///
     /// # Returns
     ///
@@ -678,7 +678,7 @@ impl HashKeyword {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashKeyword;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     /// use eyre::Result;
     ///
     /// let indices = HashKeyword::hash_indices(b"example", 10, 3)?;
@@ -717,9 +717,9 @@ impl HashKeyword {
     ///
     /// # Arguments
     ///
-    /// * `keyword_hash` - The hash of the keyword.
-    /// * `bucket_count` - The total number of buckets.
-    /// * `counter` - An additional counter to randomize the output.
+    /// - `keyword_hash` - The hash of the keyword.
+    /// - `bucket_count` - The total number of buckets.
+    /// - `counter` - An additional counter to randomize the output.
     ///
     /// # Returns
     ///
@@ -728,7 +728,7 @@ impl HashKeyword {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::hash_bucket::HashKeyword;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     /// use eyre::Result;
     ///
     /// let index = HashKeyword::index_from_hash(123456789, 10, 0)?;
@@ -750,7 +750,7 @@ impl HashKeyword {
     ///
     /// # Parameters
     ///
-    /// * `bytes` - A slice of bytes representing a little-endian `u64`.
+    /// - `bytes` - A slice of bytes representing a little-endian `u64`.
     ///
     /// # Returns
     ///
@@ -765,7 +765,7 @@ impl HashKeyword {
 mod tests {
     use rand::Rng;
 
-    use crate::hash_bucket::*;
+    use crate::private_information_retrieval::hash_bucket::*;
 
     const RAW_BUCKET: &[u8] = &[
         3, 24, 95, 141, 179, 34, 113, 254, 37, 5, 0, 87, 111, 114, 108, 100, 82, 117, 17, 222, 175,
