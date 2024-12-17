@@ -25,7 +25,7 @@ pub enum MulPir<Scheme> {
 impl<Scheme: HeScheme> MulPir<Scheme> {
     pub fn evaluation_key_configuration(
         _parameter: &IndexPirParameter,
-        _encryption_parameters: &EncryptionParameters,
+        _encryption_parameters: &EncryptionParameters<Scheme>,
     ) -> EvaluationKeyConfiguration {
         todo!()
     }

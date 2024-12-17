@@ -21,3 +21,5 @@
 pub mod private_information_retrieval;
 
 pub(crate) mod homomorphic_encryption;
+#[cfg(test)]
+mod test_utilities;

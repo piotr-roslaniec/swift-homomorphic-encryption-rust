@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::he_scheme::HeScheme;
+use crate::homomorphic_encryption::scalar::ScalarType;
 
-pub struct EncryptionParameters<Scheme: HeScheme> {
-    _market: std::marker::PhantomData<Scheme>,
+
+/// Stores pre-computed data for efficient modular operations.
+///
+/// # Warning
+///
+/// - The operations may leak the modules through timing or other side channels. Use this structure
+///     only for public moduli.
+pub struct Modulus<T: ScalarType> {
+    _marker: std::marker::PhantomData<T>,
 }
 
-impl<Scheme: HeScheme> EncryptionParameters<Scheme> {
-    pub fn new() {
-        todo!()
-    }
+
+/// Pre-computed factor for fast modular reduction.
+pub struct ReduceModulus<T: ScalarType> {
+    _marker: std::marker::PhantomData<T>,
 }

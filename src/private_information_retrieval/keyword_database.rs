@@ -48,7 +48,7 @@ use crate::private_information_retrieval::index_pir_protocol::{
     PirAlgorithm, ProcessedDatabaseWithParameters, Query, Response,
 };
 use crate::private_information_retrieval::keyword_pir_protocol::{
-    KeywordPirClient, KeywordPirConfig, KeywordPirServer,
+    KeywordPirConfig, KeywordPirServer,
 };
 use crate::private_information_retrieval::mul_pir::MulPir;
 use eyre::Result;
@@ -59,7 +59,6 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::marker::PhantomData;
 use std::str::FromStr;
-use std::time::Instant;
 use thiserror::Error;
 
 /// Keyword database errors.
@@ -368,11 +367,11 @@ impl KeywordDatabase {
 }
 
 /// Arguments for processing a keyword database.
-pub struct Arguments<Scheme> {
+pub struct Arguments<Scheme: HeScheme> {
     /// Configuration for the keyword database.
     database_config: KeywordDatabaseConfig,
     /// Encryption parameters
-    encryption_parameters: EncryptionParameters,
+    encryption_parameters: EncryptionParameters<Scheme>,
     /// PIR algorithm to process with.
     algorithm: PirAlgorithm,
     /// Number of test queries per shard.
@@ -392,7 +391,7 @@ impl<Scheme: HeScheme> Arguments<Scheme> {
     /// - `trials_per_shard`: Number of test queries per shard.
     pub fn new(
         database_config: KeywordDatabaseConfig,
-        encryption_parameters: EncryptionParameters,
+        encryption_parameters: EncryptionParameters<Scheme>,
         algorithm: PirAlgorithm,
         trials_per_shard: usize,
     ) -> Self {
@@ -442,14 +441,14 @@ impl<Scheme: HeScheme> ShardValidationResult<Scheme> {
 }
 
 /// A processed keyword database.
-pub struct Processed<Scheme> {
+pub struct Processed<Scheme: HeScheme> {
     /// Evaluation key configuration.
     evaluation_key_config: EvaluationKeyConfiguration,
     /// Maps each shard_id to the associated database shard and PIR parameters.
     shards: HashMap<String, ProcessedDatabaseWithParameters<Scheme>>,
 }
 
-impl<Scheme> Processed<Scheme> {
+impl<Scheme: HeScheme> Processed<Scheme> {
     /// Creates a new `Processed` keyword database.
     ///
     /// # Parameters
@@ -515,73 +514,71 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
     /// # Note
     ///
     /// See also `ProcessKeywordDatabase::process_shard` to process a shard before validation.
-    pub fn validate_shard(
-        shard: &ProcessedDatabaseWithParameters<Scheme>,
-        row: &KeywordValuePair,
-        trials: usize,
-        context: &Context<Scheme>,
-    ) -> Result<ShardValidationResult<Scheme>> {
-        if trials == 0 {
-            return Err(KeywordDatabaseError::InvalidTrialsPerShard.into());
-        }
-
-        let keyword_pir_parameters = shard
-            .keyword_pir_parameters
-            .as_ref()
-            .ok_or(KeywordDatabaseError::MissingKeywordPirParametersInShard)?;
-
-        let server = KeywordPirServer::new(context, shard);
-        let client = KeywordPirClient::new(keyword_pir_parameters, &shard.pir_parameters, context);
-
-        let mut evaluation_key: Option<EvaluationKey<Scheme>> = None;
-        let mut query: Option<Query<Scheme>> = None;
-        let mut response = Response::default();
-        let mut min_noise_budget = f64::INFINITY;
-
-        let compute_times: Vec<f64> = (0..trials)
-            .map(|trial| {
-                let secret_key = Scheme::generate_secret_key(context);
-                let trial_evaluation_key = client.generate_evaluation_key(&secret_key);
-                let trial_query = client.generate_query(&row.keyword, &secret_key)?;
-
-                let start = Instant::now();
-                response = server.compute_response(&trial_query, &trial_evaluation_key)?;
-                let compute_time = start.elapsed().as_secs_f64();
-
-                let noise_budget = response.noise_budget(&secret_key, true);
-                min_noise_budget = min_noise_budget.min(noise_budget);
-
-                let decrypted_response = client.decrypt(&response, &row.keyword, &secret_key)?;
-                if decrypted_response != row.value {
-                    let noise_budget = response.noise_budget(&secret_key, true);
-                    if noise_budget < Scheme::min_noise_budget() {
-                        return Err(
-                            KeywordDatabaseError::InsufficientNoiseBudget(noise_budget).into()
-                        );
-                    }
-                    return Err(KeywordDatabaseError::IncorrectPirResponse.into());
-                }
-
-                if trial == 0 {
-                    evaluation_key = Some(trial_evaluation_key);
-                    query = Some(trial_query);
-                }
-
-                Ok(compute_time)
-            })
-            .collect::<Result<Vec<f64>>>()?;
-
-        let evaluation_key = evaluation_key.ok_or(KeywordDatabaseError::EmptyEvaluationKey)?;
-        let query = query.ok_or(KeywordDatabaseError::EmptyQuery)?;
-
-        Ok(ShardValidationResult::new(
-            evaluation_key,
-            query,
-            response,
-            min_noise_budget,
-            compute_times,
-        ))
-    }
+    // pub fn validate_shard(
+    //     shard: &ProcessedDatabaseWithParameters<Scheme>,
+    //     row: &KeywordValuePair,
+    //     trials: usize,
+    //     context: &Context<Scheme>,
+    // ) -> Result<ShardValidationResult<Scheme>> {
+    //     if trials == 0 {
+    //         return Err(KeywordDatabaseError::InvalidTrialsPerShard.into());
+    //     }
+    //
+    //     let keyword_pir_parameters = shard
+    //         .keyword_pir_parameters
+    //         .as_ref()
+    //         .ok_or(KeywordDatabaseError::MissingKeywordPirParametersInShard)?;
+    //
+    //     let server = KeywordPirServer::new(context, shard);
+    //     let client = KeywordPirClient::new(keyword_pir_parameters, &shard.pir_parameters, context);
+    //
+    //     let mut evaluation_key: Option<EvaluationKey<Scheme>> = None;
+    //     let mut query: Option<Query<Scheme>> = None;
+    //     let mut response = Response::default();
+    //     let mut min_noise_budget = f64::INFINITY;
+    //
+    //     let compute_times: Vec<f64> = (0..trials)
+    //         .map(|trial| {
+    //             let secret_key = Scheme::generate_secret_key(context)?;
+    //             let trial_evaluation_key = client.generate_evaluation_key(&secret_key);
+    //             let trial_query = client.generate_query(&row.keyword, &secret_key)?;
+    //
+    //             let start = Instant::now();
+    //             response = server.compute_response(&trial_query, &trial_evaluation_key)?;
+    //             let compute_time = start.elapsed().as_secs_f64();
+    //
+    //             let noise_budget = response.noise_budget(&secret_key, true);
+    //             min_noise_budget = min_noise_budget.min(noise_budget);
+    //
+    //             let decrypted_response = client.decrypt(&response, &row.keyword, &secret_key)?;
+    //             if decrypted_response != row.value {
+    //                 let noise_budget = response.noise_budget(&secret_key, true);
+    //                 if noise_budget < Scheme::MIN_NOISE_BUDGET {
+    //                     return Err(KeywordDatabaseError::InsufficientNoiseBudget(noise_budget).into());
+    //                 }
+    //                 return Err(KeywordDatabaseError::IncorrectPirResponse.into());
+    //             }
+    //
+    //             if trial == 0 {
+    //                 evaluation_key = Some(trial_evaluation_key);
+    //                 query = Some(trial_query);
+    //             }
+    //
+    //             Ok(compute_time)
+    //         })
+    //         .collect::<Result<Vec<f64>>>()?;
+    //
+    //     let evaluation_key = evaluation_key.ok_or(KeywordDatabaseError::EmptyEvaluationKey)?;
+    //     let query = query.ok_or(KeywordDatabaseError::EmptyQuery)?;
+    //
+    //     Ok(ShardValidationResult::new(
+    //         evaluation_key,
+    //         query,
+    //         response,
+    //         min_noise_budget,
+    //         compute_times,
+    //     ))
+    // }
 
     /// Process the database to prepare for PIR queries.
     ///

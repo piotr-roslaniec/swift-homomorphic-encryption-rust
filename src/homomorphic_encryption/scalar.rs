@@ -15,6 +15,11 @@
 //! Contains helper methods for constant-time operation on scalars.
 // TODO: Currently only needed by CuckooTable
 
+use std::convert::Into;
+use std::env::var;
+use std::fmt::Debug;
+use std::ops::{Add, Sub};
+
 /// Computes `ceil(value / divisor)`.
 ///
 /// # Parameters
@@ -38,3 +43,75 @@ pub fn dividing_ceil(value: i64, divisor: i64, variable_time: bool) -> i64 {
     }
     value / divisor
 }
+
+/// Scalar type for ``PolyRq`` polynomial coefficients.
+pub trait ScalarType: PartialEq + Add<Output=Self> + Sub<Output=Self> + Send + Sized + Clone + Debug + PartialEq + Ord
+{
+    fn subtract_if_exceeds(&self, modulus: &Self) -> Self {
+        // Guard against difference mask fails
+        assert!(self <= (self.max() >> 1) + modulus);
+        let difference = self - modulus;
+        let mask = 0 - (difference >> (self.bitWidth() - 1));
+        difference - (modulus & mask)
+    }
+
+    /// Computes `-self mod modulus`.
+    ///
+    /// `self` must be in `[0, modulus-1]`.
+    ///
+    /// # Parameters
+    ///
+    /// - `modulus`: The modulus.
+    ///
+    /// # Returns
+    ///
+    /// `-self mod modulus`.
+
+    fn negate_mod(&self, modulus: &Self) -> Self;
+
+    /// Computes modular exponentiation.
+    ///
+    /// Computes `self` raised to the power of `exponent` mod `modulus`, i.e., `self^exponent mod modulus`.
+    ///
+    /// # Parameters
+    ///
+    /// - `exponent`: The exponent.
+    /// - `modulus`: The modulus.
+    /// - `variable_time`: Must be `true`. Setting to `true` causes `modulus` and `exponent` to be leaked through timing.
+    ///
+    /// # Returns
+    ///
+    /// - `self^exponent mod modulus`
+    ///
+    /// # Warning
+    ///
+    /// - Leaks `self`, `exponent`, `modulus` through timing.
+
+    fn pow_mod(&self, exponent: &Self, modulus: &Self, variable_time: bool) -> Self {
+        assert!(variable_time);
+        todo!();
+        // if exponent == 0 {
+        //     return 1
+        // }
+        // let base = self;
+        // let exponent = exponent;
+    }
+}
+
+impl ScalarType for u32 {
+    fn negate_mod(&self, modulus: &u32) -> Self {
+        assert!(self < modulus);
+        (modulus - self).subtract_if_exceeds(&modulus)
+    }
+}
+
+impl ScalarType for usize {
+    fn negate_mod(&self, modulus: &usize) -> Self {
+        assert!(self < modulus);
+        (modulus - self).subtract_if_exceeds(&modulus)
+    }
+}
+
+// TODO: These traits were necessary to fix some issues in galois.rs with type casting
+//  <S> to usize
+

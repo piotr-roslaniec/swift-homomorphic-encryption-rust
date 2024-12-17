@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-
-pub struct EncryptionParameters<Scheme: HeScheme> {
-    _market: std::marker::PhantomData<Scheme>,
+/// Serialized ``Plaintext`` type.
+pub struct SerializedPlaintext {
+    /// The serialized polynomial.
+    pub poly: Vec<u8>,
 }
 
-impl<Scheme: HeScheme> EncryptionParameters<Scheme> {
-    pub fn new() {
-        todo!()
+impl SerializedPlaintext {
+    /// Creates a serialized plaintext.
+    ///
+    /// # Parameters
+    ///
+    /// - `poly`: Serialized polynomial.
+    pub fn new(poly: &[u8]) -> Self {
+        Self { poly: poly.to_vec() }
     }
 }
