@@ -27,4 +27,3 @@ pub(crate) mod plaintext;
 pub(crate) mod poly_rq;
 pub(crate) mod scalar;
 pub(crate) mod serialized_plaintext;
-mod math;

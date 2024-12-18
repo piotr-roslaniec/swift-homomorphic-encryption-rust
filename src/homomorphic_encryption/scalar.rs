@@ -15,10 +15,8 @@
 //! Contains helper methods for constant-time operation on scalars.
 // TODO: Currently only needed by CuckooTable
 
-use std::convert::Into;
-use std::env::var;
 use std::fmt::Debug;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Shr, Sub};
 
 /// Computes `ceil(value / divisor)`.
 ///
@@ -44,15 +42,16 @@ pub fn dividing_ceil(value: i64, divisor: i64, variable_time: bool) -> i64 {
     value / divisor
 }
 
+
 /// Scalar type for ``PolyRq`` polynomial coefficients.
-pub trait ScalarType: PartialEq + Add<Output=Self> + Sub<Output=Self> + Send + Sized + Clone + Debug + PartialEq + Ord
+pub trait ScalarType: PartialEq + Add<Output=Self> + Sub<Output=Self> + Send + Sized + Clone + Debug + PartialEq + Ord + Shr<i32, Output=Self>
 {
     fn subtract_if_exceeds(&self, modulus: &Self) -> Self {
         // Guard against difference mask fails
-        assert!(self <= (self.max() >> 1) + modulus);
-        let difference = self - modulus;
-        let mask = 0 - (difference >> (self.bitWidth() - 1));
-        difference - (modulus & mask)
+        assert!(*self <= (Self::max_value() >> 1) + modulus.clone());
+        let difference = self.clone() - modulus.clone();
+        let mask = 0i32 - (difference.clone() >> (self.bit_width() as i32 - 1)).to_i32();
+        difference - modulus.bitwise_and(&(Self::from_i32(mask)))
     }
 
     /// Computes `-self mod modulus`.
@@ -96,22 +95,66 @@ pub trait ScalarType: PartialEq + Add<Output=Self> + Sub<Output=Self> + Send + S
         // let base = self;
         // let exponent = exponent;
     }
+
+    fn max_value() -> Self;
+    fn bit_width(&self) -> u8;
+    fn bitwise_and(&self, other: &Self) -> Self;
+
+    fn to_i32(&self) -> i32;
+    fn from_i32(value: i32) -> Self;
 }
 
 impl ScalarType for u32 {
     fn negate_mod(&self, modulus: &u32) -> Self {
         assert!(self < modulus);
-        (modulus - self).subtract_if_exceeds(&modulus)
+        (modulus - self).subtract_if_exceeds(modulus)
+    }
+
+    fn max_value() -> Self {
+        u32::MAX
+    }
+
+    fn bit_width(&self) -> u8 {
+        32
+    }
+
+    fn bitwise_and(&self, other: &Self) -> Self {
+        self & other
+    }
+
+    fn to_i32(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> Self {
+        value as Self
     }
 }
 
 impl ScalarType for usize {
     fn negate_mod(&self, modulus: &usize) -> Self {
         assert!(self < modulus);
-        (modulus - self).subtract_if_exceeds(&modulus)
+        (modulus - self).subtract_if_exceeds(modulus)
+    }
+
+    fn max_value() -> Self {
+        usize::MAX
+    }
+
+    fn bit_width(&self) -> u8 {
+        32
+    }
+
+    fn bitwise_and(&self, other: &Self) -> Self {
+        self & other
+    }
+
+    fn to_i32(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> Self {
+        value as Self
     }
 }
-
-// TODO: These traits were necessary to fix some issues in galois.rs with type casting
-//  <S> to usize
 

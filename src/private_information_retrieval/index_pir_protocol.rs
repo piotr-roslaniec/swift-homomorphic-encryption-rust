@@ -89,7 +89,7 @@ impl IndexPirConfig {
                 dimension_count,
                 expected: format!("{:?}", valid_dimensions_count.to_vec()),
             }
-            .into());
+                .into());
         }
         Ok(Self {
             entry_count,
@@ -167,7 +167,7 @@ pub struct ProcessedDatabase<Scheme: HeScheme> {
     pub plaintexts: Vec<Option<Plaintext<Scheme>>>,
 }
 
-impl<Scheme: HeScheme<EvalPlaintext = Plaintext<Scheme>>> ProcessedDatabase<Scheme> {
+impl<Scheme: HeScheme<EvalPlaintext=Plaintext<Scheme>>> ProcessedDatabase<Scheme> {
     /// Serialization version.
     pub const SERIALIZATION_VERSION: SerializationVersionType = 1;
     /// Indicates a zero plaintext.
@@ -228,7 +228,7 @@ impl<Scheme: HeScheme<EvalPlaintext = Plaintext<Scheme>>> ProcessedDatabase<Sche
                 serialization_version: version_number,
                 expected: Self::SERIALIZATION_VERSION,
             }
-            .into());
+                .into());
         }
 
         // Read plaintext count
@@ -249,7 +249,7 @@ impl<Scheme: HeScheme<EvalPlaintext = Plaintext<Scheme>>> ProcessedDatabase<Sche
             match tag {
                 tag if tag == Self::SERIALIZED_ZERO_PLAINTEXT_TAG => {
                     plaintexts.push(None);
-                },
+                }
                 tag if tag == Self::SERIALIZED_PLAINTEXT_TAG => {
                     let plaintext_bytes = &bytes[offset..offset + serialized_plaintext_byte_count];
                     offset += serialized_plaintext_byte_count;
@@ -257,12 +257,12 @@ impl<Scheme: HeScheme<EvalPlaintext = Plaintext<Scheme>>> ProcessedDatabase<Sche
                     let plaintext =
                         Scheme::EvalPlaintext::deserialize(&serialized_plaintext, context)?;
                     plaintexts.push(Some(plaintext));
-                },
+                }
                 _ => {
                     return Err(
                         IndexPirDatabaseError::InvalidSerializationPlaintextTag { tag }.into()
                     );
-                },
+                }
             }
         }
 

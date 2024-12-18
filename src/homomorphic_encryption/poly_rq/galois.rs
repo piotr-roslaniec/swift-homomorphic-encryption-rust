@@ -12,10 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::Index;
 use thiserror::Error;
 use eyre::Result;
-use crate::homomorphic_encryption::he_scheme::PolyFormat;
 use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
 use crate::homomorphic_encryption::scalar::ScalarType;
 
@@ -125,9 +123,10 @@ impl FixedWidthInteger for u32 {
     }
 }
 
-impl<S> PolyRq<S>
+impl<Type> PolyRq<Type>
 where
-    S: ScalarType, usize: From<S>
+    Type: ScalarType,
+    usize: From<Type>,
 {
     /// Applies a Galois transformation, also known as a Frobenius transformation.
     ///
@@ -137,7 +136,7 @@ where
     pub fn apply_galois(&self, element: u32) -> Self {
         assert!(element.is_valid_galois_element(self.degree()));
         let mut output = self.clone();
-        for (rns_index, &ref modulus) in self.moduli().iter().enumerate() {
+        for (rns_index, modulus) in self.moduli().iter().enumerate() {
             let mut iterator = GaloisCoeffIterator::new(self.degree(), element);
             let data_indices = self.data.row_indices(rns_index as u32);
             let output_index = |_column: usize| self.data[rns_index].clone();
@@ -145,7 +144,7 @@ where
                 if let Some((negate, out_index)) = iterator.next() {
                     let out_idx = output_index(out_index as usize);
                     if negate {
-                        output.data[out_idx.into()] = self.data[data_index as usize].negate_mod(&modulus);
+                        output.data[out_idx.into()] = self.data[data_index as usize].negate_mod(modulus);
                     } else {
                         output.data[out_idx.into()] = self.data[data_index as usize].clone();
                     }
@@ -172,7 +171,7 @@ pub enum GaloisElementError {
 pub struct GaloisElement {}
 
 impl GaloisElement {
-    pub const GENERATOR: u32 =  3;
+    pub const GENERATOR: u32 = 3;
 
     /// Returns the Galois element to swap rows.
     ///
@@ -204,7 +203,7 @@ impl GaloisElement {
             return Err(GaloisElementError::InvalidDegree(degree).into());
         }
 
-        let mut positive_step = step.abs() as u32;
+        let mut positive_step = step.unsigned_abs();
         if positive_step >= (degree >> 1) || positive_step == 0 {
             return Err(GaloisElementError::InvalidRotationStep { step, degree }.into());
         }
@@ -218,7 +217,7 @@ impl GaloisElement {
 
         Ok(GaloisElement::GENERATOR.pow_mod(
             &(positive_step),
-            &((degree << 1)),
+            &(degree << 1),
             true,
         ) as usize)
     }
@@ -290,7 +289,7 @@ mod test {
         for step in 1..(poly.degree() >> 1) {
             let inverse_step = (poly.degree() >> 1) - step;
             let forward_element = GaloisElement::rotating_columns(step, poly.degree())?;
-            let backward_element = GaloisElement::rotating_columns(inverse_step as u32, poly.degree())?;
+            let backward_element = GaloisElement::rotating_columns(inverse_step as i32, poly.degree())?;
             assert_eq!(poly.apply_galois(forward_element).apply_galois(backward_element as u32), poly);
             assert_eq!(poly.forward_ntt()?.apply_galois(forward_element).apply_galois(backward_element)?, poly.forward_ntt()?);
         }

@@ -21,33 +21,33 @@ use crate::homomorphic_encryption::scalar::ScalarType;
 ///
 /// The number-theoretic transform is used for efficient arithmetic.
 #[derive(Clone, PartialEq, Debug)]
-pub struct PolyRq<T: ScalarType> {
+pub struct PolyRq<Type: ScalarType> {
     /// Context for the polynomial.
-    context: PolyContext<T>,
+    context: PolyContext<Type>,
     /// Residue number system (RNS) decomposition of each coefficient.
     ///
     /// Coefficients are stored in coefficient-major order. That is, `data[rns_index, coeff_index]` stores the
     /// `coeff_index`'th coefficient mod `q_{rns_index}.`
-    pub data: Array2d<T>,
+    pub data: Array2d<Type>,
 }
 
-impl<T: ScalarType> PolyRq<T> {
-    pub fn new(context: PolyContext<T>, data: Array2d<T>) -> Self {
+impl<Type: ScalarType> PolyRq<Type> {
+    pub fn new(context: PolyContext<Type>, data: Array2d<Type>) -> Self {
         assert_eq!(context.degree, data.column_count);
         assert_eq!(context.moduli.len(), data.row_count as usize);
         assert!(Self::is_valid_data(&data));
-        Self { context, data }
+        Self { context, data  }
     }
 
-    pub fn get(&self, index: usize) -> &T {
+    pub fn get(&self, index: usize) -> &Type {
         &self.data[index]
     }
 
-    pub fn set(&mut self, index: usize, value: T) {
+    pub fn set(&mut self, index: usize, value: Type) {
         self.data[index] = value;
     }
 
-    fn is_valid_data(_data: &Array2d<T>) -> bool {
+    fn is_valid_data(_data: &Array2d<Type>) -> bool {
         todo!()
     }
 
@@ -55,8 +55,7 @@ impl<T: ScalarType> PolyRq<T> {
         todo!()
     }
 
-
-    pub fn moduli(&self) -> Vec<T> {
+    pub fn moduli(&self) -> Vec<Type> {
         self.context.moduli.clone()
     }
 

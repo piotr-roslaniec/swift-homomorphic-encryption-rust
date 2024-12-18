@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::marker::PhantomData;
 use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
+use crate::homomorphic_encryption::he_scheme::{HeScheme, PolyFormat};
 use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
 
 /// Ciphertext type.
-pub struct Ciphertext<Scheme: HeScheme> {
+pub struct Ciphertext<Scheme: HeScheme, Format: PolyFormat> {
     context: Context<Scheme>,
     polys: Vec<PolyRq<Scheme::Scalar>>,
     correction_factor: Scheme::Scalar,
     seed: Vec<u8>,
+    _marker: PhantomData<Format>
 }
 
-impl<Scheme: HeScheme> Ciphertext<Scheme> {
+impl<Scheme: HeScheme, Format: PolyFormat> Ciphertext<Scheme, Format> {
     /// The number of polynomials in the ciphertext.
     ///
     /// After a fresh encryption, the ciphertext has `HeScheme::freshCiphertextPolyCount` polynomials.

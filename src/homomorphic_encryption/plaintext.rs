@@ -31,7 +31,6 @@ pub trait PlaintextType<Scheme: HeScheme>: Sized {
 /// Plaintext struct.
 #[derive(Clone)]
 pub struct Plaintext<Scheme: HeScheme> {
-    _marker: std::marker::PhantomData<Scheme>,
     poly_context: PolyContext<Scheme::Scalar>,
     pub poly: PolyRq<Scheme::Scalar>,
 }

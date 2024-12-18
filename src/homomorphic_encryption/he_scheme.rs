@@ -17,10 +17,11 @@ use crate::homomorphic_encryption::keys::EvaluationKeyConfiguration;
 use crate::homomorphic_encryption::scalar::ScalarType;
 use eyre::Result;
 
-pub trait PolyFormat {
+pub trait PolyFormat: Clone {
     fn description() -> String;
 }
 
+#[derive(Clone)]
 pub struct Coeff;
 impl PolyFormat for Coeff {
     fn description() -> String {
@@ -28,6 +29,7 @@ impl PolyFormat for Coeff {
     }
 }
 
+#[derive(Clone)]
 pub struct Eval;
 impl PolyFormat for Eval {
     fn description() -> String {
