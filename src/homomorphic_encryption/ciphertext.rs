@@ -13,9 +13,12 @@
 // limitations under the License.
 
 use std::marker::PhantomData;
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::he_scheme::{HeScheme, PolyFormat};
-use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
+
+use crate::homomorphic_encryption::{
+    context::Context,
+    he_scheme::{HeScheme, PolyFormat},
+    poly_rq::poly_rq::PolyRq,
+};
 
 /// Ciphertext type.
 pub struct Ciphertext<Scheme: HeScheme, Format: PolyFormat> {
@@ -23,15 +26,16 @@ pub struct Ciphertext<Scheme: HeScheme, Format: PolyFormat> {
     polys: Vec<PolyRq<Scheme::Scalar>>,
     correction_factor: Scheme::Scalar,
     seed: Vec<u8>,
-    _marker: PhantomData<Format>
+    _marker: PhantomData<Format>,
 }
 
 impl<Scheme: HeScheme, Format: PolyFormat> Ciphertext<Scheme, Format> {
     /// The number of polynomials in the ciphertext.
     ///
-    /// After a fresh encryption, the ciphertext has `HeScheme::freshCiphertextPolyCount` polynomials.
-    /// The count may change during the course of HE operations, e.g. increase during ciphertext multiplication,
-    /// or decrease during relinearization, `Ciphertext::relinearize`. `
+    /// After a fresh encryption, the ciphertext has `HeScheme::freshCiphertextPolyCount`
+    /// polynomials. The count may change during the course of HE operations, e.g. increase
+    /// during ciphertext multiplication, or decrease during relinearization,
+    /// `Ciphertext::relinearize`.
     pub fn poly_count(&self) -> usize {
         self.polys.len()
     }

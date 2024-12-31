@@ -14,17 +14,15 @@
 
 use crate::homomorphic_encryption::scalar::ScalarType;
 
-
 /// Stores pre-computed data for efficient modular operations.
 ///
 /// # Warning
 ///
 /// - The operations may leak the modules through timing or other side channels. Use this structure
-///     only for public moduli.
+///   only for public moduli.
 pub struct Modulus<T: ScalarType> {
     _marker: std::marker::PhantomData<T>,
 }
-
 
 /// Pre-computed factor for fast modular reduction.
 pub struct ReduceModulus<T: ScalarType> {

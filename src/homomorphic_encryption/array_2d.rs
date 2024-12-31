@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::marker::Send;
-use std::ops::{Add, Range};
+use std::{
+    marker::Send,
+    ops::{Add, Range},
+};
 
 /// Stores values in a 2 dimensional array.
 #[derive(PartialEq, Clone, Debug)]
-pub struct Array2d<T: PartialEq + Add<Output=T> + Send + PartialEq> {
+pub struct Array2d<T: PartialEq + Add<Output = T> + Send + PartialEq> {
     data: Vec<T>,
     pub row_count: u32,
     pub column_count: u32,
 }
 
-impl<T: PartialEq + Add<Output=T> + Send> Array2d<T> {
+impl<T: PartialEq + Add<Output = T> + Send> Array2d<T> {
     /// Returns the shape of the array as a tuple (row_count, column_count).
     pub fn shape(&self) -> (u32, u32) {
         (self.row_count, self.column_count)
@@ -36,7 +38,11 @@ impl<T: PartialEq + Add<Output=T> + Send> Array2d<T> {
 
     /// Creates a new `Array2d` with the given data and dimensions.
     pub fn new(data: Vec<T>, row_count: u32, column_count: u32) -> Self {
-        assert_eq!(data.len(), (row_count * column_count) as usize, "Data size does not match dimensions");
+        assert_eq!(
+            data.len(),
+            (row_count * column_count) as usize,
+            "Data size does not match dimensions"
+        );
         Self { data, row_count, column_count }
     }
 
@@ -47,12 +53,11 @@ impl<T: PartialEq + Add<Output=T> + Send> Array2d<T> {
     pub fn row_indices(&self, row: u32) -> Range<u32> {
         self.index(row, 0)..self.index(row, self.column_count)
     }
-
 }
 
 use std::ops::{Index, IndexMut};
 
-impl<T: PartialEq + Add<Output=T> + Send> Index<usize> for Array2d<T> {
+impl<T: PartialEq + Add<Output = T> + Send> Index<usize> for Array2d<T> {
     type Output = T;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -62,7 +67,7 @@ impl<T: PartialEq + Add<Output=T> + Send> Index<usize> for Array2d<T> {
     }
 }
 
-impl<T: PartialEq + Add<Output=T> + Send> IndexMut<usize> for Array2d<T> {
+impl<T: PartialEq + Add<Output = T> + Send> IndexMut<usize> for Array2d<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         let row = index / self.column_count as usize;
         let col = index % self.column_count as usize;

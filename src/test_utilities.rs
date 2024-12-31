@@ -19,8 +19,8 @@ const TEST_PLAINTEXT_MODULUS: u32 = 1153;
 //     eyre::bail!("Unsupported scalar type");
 // }
 
-// pub fn get_test_encryption_parameters<Scheme: HeScheme>() -> Result<EncryptionParameters<Scheme>> {
-//     let coefficient_moduli = test_coefficient_moduli::<Scheme::Scalar>()?
+// pub fn get_test_encryption_parameters<Scheme: HeScheme>() -> Result<EncryptionParameters<Scheme>>
+// {     let coefficient_moduli = test_coefficient_moduli::<Scheme::Scalar>()?
 //         .into_iter()
 //         .map(Scheme::Scalar::from)
 //         .collect();

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::keys::EvaluationKeyConfiguration;
-use crate::homomorphic_encryption::scalar::ScalarType;
 use eyre::Result;
+
+use crate::homomorphic_encryption::{
+    context::Context, keys::EvaluationKeyConfiguration, scalar::ScalarType,
+};
 
 pub trait PolyFormat: Clone {
     fn description() -> String;
@@ -54,6 +55,7 @@ pub trait HeScheme: Sized {
     type CanonicalCiphertext;
     type SecretKey;
     type EvaluationKey;
+    type Context;
 
     const FRESH_CIPHERTEXT_POLY_COUNT: usize;
     const MIN_NOISE_BUDGET: f64;
@@ -220,6 +222,9 @@ pub trait HeScheme: Sized {
         element: usize,
         key: &Self::EvaluationKey,
     ) -> Result<()>;
+
+    /// Converts polynomials from coefficient representation to evaluation representation.
+    fn forward_ntt(context: &Self::Context, plaintext: &Self::CoeffPlaintext) -> Result<()>;
 
     fn relinearize(
         ciphertext: &mut Self::CanonicalCiphertext,

@@ -14,28 +14,37 @@
 
 use crate::homomorphic_encryption::scalar::ScalarType;
 
-/// Polynomial context that holds all the pre-computed values for doing efficient calculations on `PolyRq`
-/// polynomials.
+/// Polynomial context that holds all the pre-computed values for doing efficient calculations on
+/// `PolyRq` polynomials.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PolyContext<T: ScalarType> {
     /// Number `N` of coefficients in the polynomial, must be a power of two.
     pub degree: u32,
     /// CRT-representation of the modulus `Q = product_{i=0}^{L-1} q_i`.
     pub moduli: Vec<T>,
+    /// Precomputed roots of unity for modular arithmetic in NTT.
+    pub root_of_unity_powers: Vec<Vec<T>>,
+    /// Precomputed inverse roots of unity for the inverse NTT.
+    pub inverse_root_of_unity_powers: Vec<Vec<T>>,
+    /// Precomputed `degree^-1 mod q_i` for inverse NTT.
+    pub inverse_degree: Vec<T>,
 
     // TODO:
     pub reduce_moduli: Vec<T>,
 }
 
 impl<T: ScalarType> PolyContext<T> {
-
     pub fn new(degree: u32, moduli: &[T]) -> Self {
         Self {
             degree,
             moduli: moduli.to_vec(),
-            reduce_moduli: Vec::new() // TODO:
+            root_of_unity_powers: todo!(),
+            inverse_root_of_unity_powers: todo!(),
+            inverse_degree: todo!(),
+            reduce_moduli: todo!(),
         }
     }
+
     pub fn serialization_byte_count(&self) -> usize {
         todo!()
     }

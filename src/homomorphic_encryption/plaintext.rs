@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::poly_rq::poly_context::PolyContext;
-use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
-use crate::homomorphic_encryption::serialized_plaintext::SerializedPlaintext;
 use eyre::Result;
+
+use crate::homomorphic_encryption::{
+    context::Context,
+    he_scheme::HeScheme,
+    poly_rq::{poly_context::PolyContext, poly_rq::PolyRq},
+    serialized_plaintext::SerializedPlaintext,
+};
 
 pub trait PlaintextType<Scheme: HeScheme>: Sized {
     fn deserialize(

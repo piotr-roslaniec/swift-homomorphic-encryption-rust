@@ -40,26 +40,26 @@
 //! - Validating the correctness of database processing
 //! - Performing PIR queries on the processed database
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::keys::{EvaluationKey, EvaluationKeyConfiguration};
-use crate::private_information_retrieval::index_pir_protocol::{
-    PirAlgorithm, ProcessedDatabaseWithParameters, Query, Response,
-};
-use crate::private_information_retrieval::keyword_pir_protocol::{
-    KeywordPirConfig, KeywordPirServer,
-};
-use crate::private_information_retrieval::mul_pir::MulPir;
+use std::{cmp::max, collections::HashMap, fmt::Display, marker::PhantomData, str::FromStr};
+
 use eyre::Result;
 use serde_derive::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::cmp::max;
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::marker::PhantomData;
-use std::str::FromStr;
 use thiserror::Error;
+
+use crate::{
+    homomorphic_encryption::{
+        context::Context,
+        encryption_parameters::EncryptionParameters,
+        he_scheme::HeScheme,
+        keys::{EvaluationKey, EvaluationKeyConfiguration},
+    },
+    private_information_retrieval::{
+        index_pir_protocol::{PirAlgorithm, ProcessedDatabaseWithParameters, Query, Response},
+        keyword_pir_protocol::{KeywordPirConfig, KeywordPirServer},
+        mul_pir::MulPir,
+    },
+};
 
 /// Keyword database errors.
 #[derive(Debug, Clone, Error, PartialEq)]
@@ -106,8 +106,8 @@ impl From<(Keyword, KeywordValue, KeywordValue)> for KeywordDatabaseError {
     }
 }
 
-// Declaring types here instead of in KeywordValuePair because associated types are not allowed in structs.
-// See: https://github.com/rust-lang/rust/issues/8995
+// Declaring types here instead of in KeywordValuePair because associated types are not allowed in
+// structs. See: https://github.com/rust-lang/rust/issues/8995
 
 /// Represents a keyword in a keyword-value pair.
 pub type Keyword = Vec<u8>;
@@ -161,7 +161,8 @@ impl KeywordValuePair {
 /// Different ways to divide database into disjoint shards.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum Sharding {
-    /// Divide database into as many shards as neede to average at least `EntryCountPerShard` entries per shard.
+    /// Divide database into as many shards as neede to average at least `EntryCountPerShard`
+    /// entries per shard.
     EntryCountPerShard(usize),
     /// Divide database into `ShardCount` approximately equal-sized shards.
     ShardCount(usize),
@@ -306,7 +307,6 @@ impl KeywordDatabaseConfig {
     ///
     /// - `sharding`: Sharding configuration.
     /// - `keyword_pir_config`: Configuration for the keyword PIR protocol.
-    ///
     pub fn new(sharding: Sharding, keyword_pir_config: KeywordPirConfig) -> Self {
         Self { sharding, keyword_pir_config }
     }
@@ -530,7 +530,8 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
     //         .ok_or(KeywordDatabaseError::MissingKeywordPirParametersInShard)?;
     //
     //     let server = KeywordPirServer::new(context, shard);
-    //     let client = KeywordPirClient::new(keyword_pir_parameters, &shard.pir_parameters, context);
+    //     let client = KeywordPirClient::new(keyword_pir_parameters, &shard.pir_parameters,
+    // context);
     //
     //     let mut evaluation_key: Option<EvaluationKey<Scheme>> = None;
     //     let mut query: Option<Query<Scheme>> = None;
@@ -554,9 +555,9 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
     //             if decrypted_response != row.value {
     //                 let noise_budget = response.noise_budget(&secret_key, true);
     //                 if noise_budget < Scheme::MIN_NOISE_BUDGET {
-    //                     return Err(KeywordDatabaseError::InsufficientNoiseBudget(noise_budget).into());
-    //                 }
-    //                 return Err(KeywordDatabaseError::IncorrectPirResponse.into());
+    //                     return
+    // Err(KeywordDatabaseError::InsufficientNoiseBudget(noise_budget).into());
+    // }                 return Err(KeywordDatabaseError::IncorrectPirResponse.into());
     //             }
     //
     //             if trial == 0 {
@@ -631,11 +632,12 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::private_information_retrieval::pir_test_utils::get_test_table;
     use rand::rngs::StdRng;
     use rand_core::SeedableRng;
     use serde_json;
+
+    use super::*;
+    use crate::private_information_retrieval::pir_test_utils::get_test_table;
 
     #[test]
     fn test_sharding_codable() {

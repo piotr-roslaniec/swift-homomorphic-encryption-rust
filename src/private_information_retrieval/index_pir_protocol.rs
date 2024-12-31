@@ -12,16 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::keys::{EvaluationKeyConfiguration, SecretKey};
-use crate::homomorphic_encryption::plaintext::{Plaintext, PlaintextType};
-use crate::homomorphic_encryption::serialized_plaintext::SerializedPlaintext;
-use crate::private_information_retrieval::keyword_pir_protocol::KeywordPirParameter;
-use eyre::Result;
 use std::path::PathBuf;
+
+use eyre::Result;
 use thiserror::Error;
+
+use crate::{
+    homomorphic_encryption::{
+        context::Context,
+        encryption_parameters::EncryptionParameters,
+        he_scheme::HeScheme,
+        keys::{EvaluationKeyConfiguration, SecretKey},
+        plaintext::{Plaintext, PlaintextType},
+        serialized_plaintext::SerializedPlaintext,
+    },
+    private_information_retrieval::keyword_pir_protocol::KeywordPirParameter,
+};
 
 // Which algorithm to use for PIR computation.
 pub enum PirAlgorithm {
@@ -89,7 +95,7 @@ impl IndexPirConfig {
                 dimension_count,
                 expected: format!("{:?}", valid_dimensions_count.to_vec()),
             }
-                .into());
+            .into());
         }
         Ok(Self {
             entry_count,
@@ -167,17 +173,19 @@ pub struct ProcessedDatabase<Scheme: HeScheme> {
     pub plaintexts: Vec<Option<Plaintext<Scheme>>>,
 }
 
-impl<Scheme: HeScheme<EvalPlaintext=Plaintext<Scheme>>> ProcessedDatabase<Scheme> {
+impl<Scheme: HeScheme<EvalPlaintext = Plaintext<Scheme>>> ProcessedDatabase<Scheme> {
     /// Serialization version.
     pub const SERIALIZATION_VERSION: SerializationVersionType = 1;
-    /// Indicates a zero plaintext.
-    pub const SERIALIZED_ZERO_PLAINTEXT_TAG: u8 = 0;
     /// Indicates a non-zero plaintext.
     pub const SERIALIZED_PLAINTEXT_TAG: u8 = 0;
+    /// Indicates a zero plaintext.
+    pub const SERIALIZED_ZERO_PLAINTEXT_TAG: u8 = 0;
+
     /// Number of plaintexts in the database, including padding plaintexts.
     pub fn count(&self) -> usize {
         self.plaintexts.len()
     }
+
     /// Whether the database is empty.
     pub fn is_empty(&self) -> bool {
         self.plaintexts.is_empty()
@@ -228,7 +236,7 @@ impl<Scheme: HeScheme<EvalPlaintext=Plaintext<Scheme>>> ProcessedDatabase<Scheme
                 serialization_version: version_number,
                 expected: Self::SERIALIZATION_VERSION,
             }
-                .into());
+            .into());
         }
 
         // Read plaintext count
@@ -249,7 +257,7 @@ impl<Scheme: HeScheme<EvalPlaintext=Plaintext<Scheme>>> ProcessedDatabase<Scheme
             match tag {
                 tag if tag == Self::SERIALIZED_ZERO_PLAINTEXT_TAG => {
                     plaintexts.push(None);
-                }
+                },
                 tag if tag == Self::SERIALIZED_PLAINTEXT_TAG => {
                     let plaintext_bytes = &bytes[offset..offset + serialized_plaintext_byte_count];
                     offset += serialized_plaintext_byte_count;
@@ -257,12 +265,12 @@ impl<Scheme: HeScheme<EvalPlaintext=Plaintext<Scheme>>> ProcessedDatabase<Scheme
                     let plaintext =
                         Scheme::EvalPlaintext::deserialize(&serialized_plaintext, context)?;
                     plaintexts.push(Some(plaintext));
-                }
+                },
                 _ => {
                     return Err(
                         IndexPirDatabaseError::InvalidSerializationPlaintextTag { tag }.into()
                     );
-                }
+                },
             }
         }
 
@@ -455,7 +463,8 @@ pub trait IndexPirServer<IndexPir> {
 
     /// Evaluation key configuration.
     ///
-    /// This tells the client what to include in the evaluation key. Must be the same between client and server.
+    /// This tells the client what to include in the evaluation key. Must be the same between client
+    /// and server.
     fn evaluation_key_configuration(&self) -> &EvaluationKeyConfiguration;
 }
 
@@ -520,8 +529,9 @@ mod test {
     //     Server: IndexPirServer,
     //     Client: IndexPirClient<IndexPir=Server::IndexPir>,
     // {
-    //     let database = get_database_for_testing(parameter.entry_count(), parameter.entry_size_in_bytes());
-    //     let processed_db = Server::process(&database, context, parameter)?;
+    //     let database = get_database_for_testing(parameter.entry_count(),
+    // parameter.entry_size_in_bytes());     let processed_db = Server::process(&database,
+    // context, parameter)?;
     //
     //     let server = Server::new(parameter, context, &processed_db)?;
     //     let client = Client::new(parameter, context);

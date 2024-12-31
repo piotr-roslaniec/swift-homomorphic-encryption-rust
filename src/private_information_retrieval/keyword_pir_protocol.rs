@@ -12,19 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::keys::{EvaluationKey, SecretKey};
-use crate::private_information_retrieval::cuckoo_table::CuckooTableConfig;
-use crate::private_information_retrieval::hash_bucket::HashKeyword;
-use crate::private_information_retrieval::index_pir_protocol::{
-    IndexPirParameter, ProcessedDatabaseWithParameters, Query, Response,
-};
-use crate::private_information_retrieval::keyword_database::{
-    Keyword, KeywordValue, KeywordValuePair,
-};
-use eyre::Result;
 use std::marker::PhantomData;
+
+use eyre::Result;
+
+use crate::{
+    homomorphic_encryption::{
+        context::Context,
+        he_scheme::HeScheme,
+        keys::{EvaluationKey, SecretKey},
+    },
+    private_information_retrieval::{
+        cuckoo_table::CuckooTableConfig,
+        hash_bucket::HashKeyword,
+        index_pir_protocol::{IndexPirParameter, ProcessedDatabaseWithParameters, Query, Response},
+        keyword_database::{Keyword, KeywordValue, KeywordValuePair},
+    },
+};
 
 /// Configuration for a `KeywordDatabase` in a PIR protocol
 pub struct KeywordPirConfig {
@@ -47,7 +51,8 @@ impl KeywordPirParameter {
     ///
     /// # Parameters
     ///
-    /// - `hash_function_count`: The number of hash functions in the `CuckooTableConfig` for the database.
+    /// - `hash_function_count`: The number of hash functions in the `CuckooTableConfig` for the
+    ///   database.
     pub fn new(hash_function_count: usize) -> Self {
         Self { hash_function_count }
     }
@@ -55,8 +60,8 @@ impl KeywordPirParameter {
 
 /// A server that can compute encrypted keyword PIR results.
 ///
-/// The server computes the response to a keyword PIR query by transforming the database to an Index PIR database using
-/// cuckoo hashing.
+/// The server computes the response to a keyword PIR query by transforming the database to an Index
+/// PIR database using cuckoo hashing.
 pub struct KeywordPirServer<Scheme: HeScheme> {
     _marker: PhantomData<Scheme>,
 }
@@ -100,7 +105,8 @@ impl<Scheme: HeScheme> KeywordPirClient<Scheme> {
     /// # Parameters
     ///
     /// - `keyword_pir_parameter`: Parameters for a keyword PIR lookup.
-    /// - `index_pir_parameter`: Parameters for an index PIR lookup for the transformed keyword to index database.
+    /// - `index_pir_parameter`: Parameters for an index PIR lookup for the transformed keyword to
+    ///   index database.
     /// - `context`: The context for the HE computations.
     pub fn new(
         _keyword_pir_parameter: &KeywordPirParameter,

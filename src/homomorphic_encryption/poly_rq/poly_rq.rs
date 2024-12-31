@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::array_2d::Array2d;
-use crate::homomorphic_encryption::poly_rq::poly_context::PolyContext;
-use crate::homomorphic_encryption::scalar::ScalarType;
+use crate::homomorphic_encryption::{
+    array_2d::Array2d, poly_rq::poly_context::PolyContext, scalar::ScalarType,
+};
 
 /// Represents a polynomial in `R_q = Z_q[X] / (X^N + 1)` for `N` a power of
 /// two and `q` a (possibly) multi-word integer.
@@ -26,8 +26,8 @@ pub struct PolyRq<Type: ScalarType> {
     context: PolyContext<Type>,
     /// Residue number system (RNS) decomposition of each coefficient.
     ///
-    /// Coefficients are stored in coefficient-major order. That is, `data[rns_index, coeff_index]` stores the
-    /// `coeff_index`'th coefficient mod `q_{rns_index}.`
+    /// Coefficients are stored in coefficient-major order. That is, `data[rns_index, coeff_index]`
+    /// stores the `coeff_index`'th coefficient mod `q_{rns_index}.`
     pub data: Array2d<Type>,
 }
 
@@ -36,7 +36,7 @@ impl<Type: ScalarType> PolyRq<Type> {
         assert_eq!(context.degree, data.column_count);
         assert_eq!(context.moduli.len(), data.row_count as usize);
         assert!(Self::is_valid_data(&data));
-        Self { context, data  }
+        Self { context, data }
     }
 
     pub fn get(&self, index: usize) -> &Type {

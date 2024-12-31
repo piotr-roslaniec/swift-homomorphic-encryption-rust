@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use criterion::{criterion_group, criterion_main, Criterion};
-use rand::rngs::StdRng;
-use rand::Rng;
-use rand_core::SeedableRng;
 use std::collections::HashSet;
+
+use criterion::{criterion_group, criterion_main, Criterion};
+use rand::{rngs::StdRng, Rng};
+use rand_core::SeedableRng;
 use swift_homomorphic_encryption_rust::private_information_retrieval::cuckoo_table::{
     BucketCountConfig, CuckooBucketEntry, CuckooTable, CuckooTableConfig,
 };

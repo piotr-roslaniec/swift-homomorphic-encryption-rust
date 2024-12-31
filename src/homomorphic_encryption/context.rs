@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::poly_rq::poly_context::PolyContext;
+use crate::homomorphic_encryption::{
+    encryption_parameters::EncryptionParameters, he_scheme::HeScheme,
+    poly_rq::poly_context::PolyContext,
+};
 
 /// Pre-computation for the HE operations.
 ///
-/// HE operations are typically only supported between objects, such as ``Ciphertext``, ``Plaintext``,
-/// ``EvaluationKey``, ``SecretKey``,  with the same context.
+/// HE operations are typically only supported between objects, such as ``Ciphertext``,
+/// ``Plaintext``, ``EvaluationKey``, ``SecretKey``,  with the same context.
 #[derive(Clone)]
 pub struct Context<Scheme: HeScheme> {
     _marker: std::marker::PhantomData<Scheme>,

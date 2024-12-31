@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use thiserror::Error;
 use eyre::Result;
-use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
-use crate::homomorphic_encryption::scalar::ScalarType;
+use thiserror::Error;
+
+use crate::homomorphic_encryption::{poly_rq::poly_rq::PolyRq, scalar::ScalarType};
 
 /// Iterates over coefficients of a polynomial, applying a Galois transformation.
 pub struct GaloisCoeffIterator {
@@ -130,7 +130,8 @@ where
 {
     /// Applies a Galois transformation, also known as a Frobenius transformation.
     ///
-    /// The Galois transformation with Galois element `p` transforms the polynomial `f(x)` to `f(x^p)`.
+    /// The Galois transformation with Galois element `p` transforms the polynomial `f(x)` to
+    /// `f(x^p)`.
     /// - Parameter element: Galois element of the transformation.
     /// - Returns: The polynomial after applying the Galois transformation.
     pub fn apply_galois(&self, element: u32) -> Self {
@@ -144,7 +145,8 @@ where
                 if let Some((negate, out_index)) = iterator.next() {
                     let out_idx = output_index(out_index as usize);
                     if negate {
-                        output.data[out_idx.into()] = self.data[data_index as usize].negate_mod(modulus);
+                        output.data[out_idx.into()] =
+                            self.data[data_index as usize].negate_mod(modulus);
                     } else {
                         output.data[out_idx.into()] = self.data[data_index as usize].clone();
                     }
@@ -189,7 +191,8 @@ impl GaloisElement {
     /// Returns the Galois element for column rotation by `step`.
     ///
     /// # Parameters
-    /// - `step`: Number of slots to rotate. Negative values indicate a left rotation, and positive values indicate
+    /// - `step`: Number of slots to rotate. Negative values indicate a left rotation, and positive
+    ///   values indicate
     /// right rotation. Must have absolute value in `[1, N / 2 - 1]`.
     /// - `degree`: The RLWE ring dimension `N`.
     ///
@@ -215,57 +218,130 @@ impl GaloisElement {
             positive_step = (degree >> 1) - positive_step;
         }
 
-        Ok(GaloisElement::GENERATOR.pow_mod(
-            &(positive_step),
-            &(degree << 1),
-            true,
-        ) as usize)
+        Ok(GaloisElement::GENERATOR.pow_mod(&(positive_step), &(degree << 1), true) as usize)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::homomorphic_encryption::array_2d::Array2d;
-    use crate::homomorphic_encryption::scalar::ScalarType;
-    use crate::homomorphic_encryption::poly_rq::poly_context::PolyContext;
-    use crate::homomorphic_encryption::poly_rq::poly_rq::PolyRq;
     use eyre::Result;
-    use crate::homomorphic_encryption::poly_rq::galois::GaloisElement;
 
-    fn get_test_poly_with_element3_degree4_moduli1<T: ScalarType>() -> Result<(PolyRq<T>, PolyRq<T>)> {
+    use crate::homomorphic_encryption::{
+        array_2d::Array2d,
+        poly_rq::{galois::GaloisElement, poly_context::PolyContext, poly_rq::PolyRq},
+        scalar::ScalarType,
+    };
+
+    fn get_test_poly_with_element3_degree4_moduli1<T: ScalarType + From<u32>>(
+    ) -> Result<(PolyRq<T>, PolyRq<T>)> {
         let degree = 4;
-        let moduli = vec![17];
+        // Convert moduli into the generic type T
+        let moduli = vec![T::from(17u32)];
         let plaintext_poly_context = PolyContext::new(degree, &moduli);
-        let data = Array2d::new(vec![0, 1, 2, 3], 1, 4);
-        let expected_data = Array2d::new(vec![0, 3, 15, 1], 1, 4);
+
+        // Convert data and expected_data into type T
+        let data =
+            Array2d::new(vec![T::from(0u32), T::from(1u32), T::from(2u32), T::from(3u32)], 1, 4);
+        let expected_data =
+            Array2d::new(vec![T::from(0u32), T::from(3u32), T::from(15u32), T::from(1u32)], 1, 4);
+
+        // Initialize PolyRq with the converted data
         let poly = PolyRq::new(plaintext_poly_context.clone(), data);
         let expected_poly = PolyRq::new(plaintext_poly_context, expected_data);
         Ok((poly, expected_poly))
     }
 
-    fn get_test_poly_with_element3_degree8_moduli1<T: ScalarType>() -> Result<(PolyRq<T>, PolyRq<T>)> {
+    fn get_test_poly_with_element3_degree8_moduli1<T: ScalarType + From<u32>>(
+    ) -> Result<(PolyRq<T>, PolyRq<T>)> {
         let degree = 8;
-        let moduli = vec![17];
+        let moduli = vec![T::from(17u32)];
         let plaintext_poly_context = PolyContext::new(degree, &moduli);
-        let data = Array2d::new(vec![0, 1, 2, 3, 4, 5, 6, 7], 1, 8);
-        let expected_data = Array2d::new(vec![0, 14, 6, 1, 13, 7, 2, 12], 1, 8);
+
+        let data = Array2d::new(
+            vec![
+                T::from(0u32),
+                T::from(1u32),
+                T::from(2u32),
+                T::from(3u32),
+                T::from(4u32),
+                T::from(5u32),
+                T::from(6u32),
+                T::from(7u32),
+            ],
+            1,
+            8,
+        );
+        let expected_data = Array2d::new(
+            vec![
+                T::from(0u32),
+                T::from(14u32),
+                T::from(6u32),
+                T::from(1u32),
+                T::from(13u32),
+                T::from(7u32),
+                T::from(2u32),
+                T::from(12u32),
+            ],
+            1,
+            8,
+        );
+
         let poly = PolyRq::new(plaintext_poly_context.clone(), data);
         let expected_poly = PolyRq::new(plaintext_poly_context, expected_data);
         Ok((poly, expected_poly))
     }
 
-    fn get_test_poly_with_element3_degree8_moduli2<T: ScalarType>() -> Result<(PolyRq<T>, PolyRq<T>)> {
+    fn get_test_poly_with_element3_degree8_moduli2<T: ScalarType + From<u32>>(
+    ) -> Result<(PolyRq<T>, PolyRq<T>)> {
         let degree = 8;
-        let moduli = vec![17, 97];
+        let moduli = vec![T::from(17u32), T::from(97u32)];
         let plaintext_poly_context = PolyContext::new(degree, &moduli);
-        let data = Array2d::new(vec![
-            0, 1, 2, 3, 4, 5, 6, 7,
-            7, 6, 5, 4, 3, 2, 1, 0
-        ], 2, 8);
-        let expected_data = Array2d::new(vec![
-            0, 14, 6, 1, 13, 7, 2, 12,
-            7, 93, 1, 6, 94, 0, 5, 95
-        ], 2, 8);
+
+        let data = Array2d::new(
+            vec![
+                T::from(0u32),
+                T::from(1u32),
+                T::from(2u32),
+                T::from(3u32),
+                T::from(4u32),
+                T::from(5u32),
+                T::from(6u32),
+                T::from(7u32),
+                T::from(7u32),
+                T::from(6u32),
+                T::from(5u32),
+                T::from(4u32),
+                T::from(3u32),
+                T::from(2u32),
+                T::from(1u32),
+                T::from(0u32),
+            ],
+            2,
+            8,
+        );
+        let expected_data = Array2d::new(
+            vec![
+                T::from(0u32),
+                T::from(14u32),
+                T::from(6u32),
+                T::from(1u32),
+                T::from(13u32),
+                T::from(7u32),
+                T::from(2u32),
+                T::from(12u32),
+                T::from(7u32),
+                T::from(93u32),
+                T::from(1u32),
+                T::from(6u32),
+                T::from(94u32),
+                T::from(0u32),
+                T::from(5u32),
+                T::from(95u32),
+            ],
+            2,
+            8,
+        );
+
         let poly = PolyRq::new(plaintext_poly_context.clone(), data);
         let expected_poly = PolyRq::new(plaintext_poly_context, expected_data);
         Ok((poly, expected_poly))
@@ -279,24 +355,37 @@ mod test {
         assert_eq!(poly.forward_ntt()?.apply_galois(3).inverse_ntt()?, expected_poly);
         for index in 1..poly.degree() {
             let element = (index * 2 + 1) as u32;
-            assert_eq!(poly.apply_galois(element).forward_ntt()?, poly.forward_ntt()?.apply_galois(element));
+            assert_eq!(
+                poly.apply_galois(element).forward_ntt()?,
+                poly.forward_ntt()?.apply_galois(element)
+            );
         }
 
         let forward_element = GaloisElement::swapping_rows(poly.degree());
         assert_eq!(poly.apply_galois(forward_element).apply_galois(forward_element), poly);
-        assert_eq!(poly.forward_ntt()?.apply_galois(forward_element).apply_galois(forward_element)?, poly.forward_ntt()?);
+        assert_eq!(
+            poly.forward_ntt()?.apply_galois(forward_element).apply_galois(forward_element)?,
+            poly.forward_ntt()?
+        );
 
         for step in 1..(poly.degree() >> 1) {
             let inverse_step = (poly.degree() >> 1) - step;
-            let forward_element = GaloisElement::rotating_columns(step, poly.degree())?;
-            let backward_element = GaloisElement::rotating_columns(inverse_step as i32, poly.degree())?;
-            assert_eq!(poly.apply_galois(forward_element).apply_galois(backward_element as u32), poly);
-            assert_eq!(poly.forward_ntt()?.apply_galois(forward_element).apply_galois(backward_element)?, poly.forward_ntt()?);
+            let forward_element = GaloisElement::rotating_columns(step as i32, poly.degree())?;
+            let backward_element =
+                GaloisElement::rotating_columns(inverse_step as i32, poly.degree())?;
+            assert_eq!(
+                poly.apply_galois(forward_element).apply_galois(backward_element as u32),
+                poly
+            );
+            assert_eq!(
+                poly.forward_ntt()?.apply_galois(forward_element).apply_galois(backward_element)?,
+                poly.forward_ntt()?
+            );
         }
         Ok(())
     }
 
-    fn test_apply_galois_for_type<T: ScalarType>() -> Result<()> {
+    fn test_apply_galois_for_type<T: ScalarType + From<u32>>() -> Result<()> {
         apply_galois_test_helper(get_test_poly_with_element3_degree4_moduli1::<T>)?;
         apply_galois_test_helper(get_test_poly_with_element3_degree8_moduli1::<T>)?;
         apply_galois_test_helper(get_test_poly_with_element3_degree8_moduli2::<T>)?;
@@ -306,7 +395,7 @@ mod test {
     #[test]
     pub fn test_apply_galois() -> Result<()> {
         test_apply_galois_for_type::<u32>()?;
-        // test_apply_galois_for_type::<u64>()?;
+        test_apply_galois_for_type::<u64>()?;
         Ok(())
     }
 }
