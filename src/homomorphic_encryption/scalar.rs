@@ -53,7 +53,9 @@ pub trait ScalarType:
     + Send
     + Sized
     + Clone
+    + Copy
     + Debug
+    + Default
     + PartialEq
     + Ord
     + Shr<i32, Output = Self>
@@ -108,6 +110,14 @@ pub trait ScalarType:
         // }
         // let base = self;
         // let exponent = exponent;
+    }
+
+    fn add_mod(&self, other: &Self, modulus: &Self) -> Self {
+        todo!();
+    }
+
+    fn sub_mod(&self, other: &Self, modulus: &Self) -> Self {
+        todo!();
     }
 
     fn max_value() -> Self;

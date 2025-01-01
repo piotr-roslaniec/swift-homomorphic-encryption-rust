@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use eyre::Result;
+use std::ops::Index;
 use thiserror::Error;
 
 use crate::homomorphic_encryption::{poly_rq::poly_rq::PolyRq, scalar::ScalarType};
@@ -126,29 +127,34 @@ impl FixedWidthInteger for u32 {
 impl<Type> PolyRq<Type>
 where
     Type: ScalarType,
-    usize: From<Type>,
 {
     /// Applies a Galois transformation, also known as a Frobenius transformation.
     ///
-    /// The Galois transformation with Galois element `p` transforms the polynomial `f(x)` to
-    /// `f(x^p)`.
-    /// - Parameter element: Galois element of the transformation.
-    /// - Returns: The polynomial after applying the Galois transformation.
+    /// The Galois transformation with Galois element `p` transforms the polynomial `f(x)` to `f(x^p)`.
+    ///
+    /// # Parameters
+    /// - `element`: Galois element of the transformation.
+    ///
+    /// # Returns
+    /// The polynomial after applying the Galois transformation.
     pub fn apply_galois(&self, element: u32) -> Self {
         assert!(element.is_valid_galois_element(self.degree()));
         let mut output = self.clone();
         for (rns_index, modulus) in self.moduli().iter().enumerate() {
             let mut iterator = GaloisCoeffIterator::new(self.degree(), element);
-            let data_indices = self.data.row_indices(rns_index as u32);
-            let output_index = |_column: usize| self.data[rns_index].clone();
+            let data_indices = self.data.row_indices(rns_index);
+            let output_index = |column: usize| self.data.index(rns_index, column);
             for data_index in data_indices {
                 if let Some((negate, out_index)) = iterator.next() {
                     let out_idx = output_index(out_index as usize);
                     if negate {
-                        output.data[out_idx.into()] =
-                            self.data[data_index as usize].negate_mod(modulus);
+                        let negated = self.data[data_index]
+                            .iter()
+                            .map(|x| x.negate_mod(modulus))
+                            .collect::<Vec<_>>();
+                        output.data[out_idx].copy_from_slice(&negated);
                     } else {
-                        output.data[out_idx.into()] = self.data[data_index as usize].clone();
+                        output.data[out_idx].copy_from_slice(&self.data[data_index]);
                     }
                 } else {
                     panic!("GaloisCoeffIterator goes out of index");
@@ -157,6 +163,8 @@ where
         }
         output
     }
+    
+    
 }
 
 #[derive(Error, Debug)]
@@ -201,7 +209,7 @@ impl GaloisElement {
     ///
     /// # Errors
     /// Returns an error if the degree is not a power of two or if the step is invalid.
-    pub fn rotating_columns(step: i32, degree: u32) -> Result<usize> {
+    pub fn rotating_columns(step: i32, degree: u32) -> Result<u32> {
         if !degree.is_power_of_two() {
             return Err(GaloisElementError::InvalidDegree(degree).into());
         }
@@ -218,7 +226,7 @@ impl GaloisElement {
             positive_step = (degree >> 1) - positive_step;
         }
 
-        Ok(GaloisElement::GENERATOR.pow_mod(&(positive_step), &(degree << 1), true) as usize)
+        Ok(GaloisElement::GENERATOR.pow_mod(&(positive_step), &(degree << 1), true))
     }
 }
 
@@ -231,6 +239,7 @@ mod test {
         poly_rq::{galois::GaloisElement, poly_context::PolyContext, poly_rq::PolyRq},
         scalar::ScalarType,
     };
+    use crate::homomorphic_encryption::poly_rq::ntt::{ForwardNtt, InverseNtt};
 
     fn get_test_poly_with_element3_degree4_moduli1<T: ScalarType + From<u32>>(
     ) -> Result<(PolyRq<T>, PolyRq<T>)> {
@@ -350,22 +359,22 @@ mod test {
     fn apply_galois_test_helper<T: ScalarType>(
         get_func: fn() -> Result<(PolyRq<T>, PolyRq<T>)>,
     ) -> Result<()> {
-        let (poly, expected_poly) = get_func()?;
+        let (mut poly, expected_poly) = get_func()?;
         assert_eq!(poly.apply_galois(3), expected_poly);
-        assert_eq!(poly.forward_ntt()?.apply_galois(3).inverse_ntt()?, expected_poly);
+        assert_eq!(poly.forward_ntt().apply_galois(3).inverse_ntt(), expected_poly);
         for index in 1..poly.degree() {
             let element = (index * 2 + 1) as u32;
             assert_eq!(
-                poly.apply_galois(element).forward_ntt()?,
-                poly.forward_ntt()?.apply_galois(element)
+                poly.apply_galois(element).forward_ntt(),
+                poly.forward_ntt().apply_galois(element)
             );
         }
 
         let forward_element = GaloisElement::swapping_rows(poly.degree());
         assert_eq!(poly.apply_galois(forward_element).apply_galois(forward_element), poly);
         assert_eq!(
-            poly.forward_ntt()?.apply_galois(forward_element).apply_galois(forward_element)?,
-            poly.forward_ntt()?
+            poly.forward_ntt().apply_galois(forward_element).apply_galois(forward_element),
+            poly.forward_ntt()
         );
 
         for step in 1..(poly.degree() >> 1) {
@@ -378,8 +387,8 @@ mod test {
                 poly
             );
             assert_eq!(
-                poly.forward_ntt()?.apply_galois(forward_element).apply_galois(backward_element)?,
-                poly.forward_ntt()?
+                poly.forward_ntt().apply_galois(forward_element).apply_galois(backward_element),
+                poly.forward_ntt()
             );
         }
         Ok(())
