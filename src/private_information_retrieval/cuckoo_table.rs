@@ -23,26 +23,35 @@
 //!
 //! This module provides the following key components:
 //!
-//! - `CuckooTableConfig`: Configuration for the cuckoo table, including the number of hash functions,
-//!   maximum eviction count, maximum serialized bucket size, and bucket count configuration.
-//! - `CuckooTable`: The main data structure implementing the cuckoo hash table, supporting insertion,
-//!   lookup, and expansion of the table.
+//! - `CuckooTableConfig`: Configuration for the cuckoo table, including the number of hash
+//!   functions, maximum eviction count, maximum serialized bucket size, and bucket count
+//!   configuration.
+//! - `CuckooTable`: The main data structure implementing the cuckoo hash table, supporting
+//!   insertion, lookup, and expansion of the table.
 //! - `CuckooBucket`: Represents a single bucket in the cuckoo table, storing a list of entries.
-//! - `CuckooBucketEntry`: Represents a single entry in a cuckoo bucket, consisting of a keyword and a value.
-//! - `CuckooTableInformation`: Provides a summary of the cuckoo table, including entry count, bucket count,
-//!   empty bucket count, and load factor.
+//! - `CuckooBucketEntry`: Represents a single entry in a cuckoo bucket, consisting of a keyword and
+//!   a value.
+//! - `CuckooTableInformation`: Provides a summary of the cuckoo table, including entry count,
+//!   bucket count, empty bucket count, and load factor.
 //!
-//! The implementation of hash table entries, `CuckooBucketEntry`, is taken from the `hash_bucket` module.
+//! The implementation of hash table entries, `CuckooBucketEntry`, is taken from the `hash_bucket`
+//! module.
 
-use crate::homomorphic_encryption::scalar::dividing_ceil;
-use crate::private_information_retrieval::error::PirError;
-use crate::private_information_retrieval::hash_bucket::{HashBucket, HashKeyword};
-use crate::private_information_retrieval::keyword_database::{Keyword, KeywordValue};
+use std::fmt;
+
 use eyre::Result;
 use rand::seq::SliceRandom;
 use rand_core::RngCore;
-use std::fmt;
 use thiserror::Error;
+
+use crate::{
+    homomorphic_encryption::scalar::dividing_ceil,
+    private_information_retrieval::{
+        error::PirError,
+        hash_bucket::{HashBucket, HashKeyword},
+        keyword_database::{Keyword, KeywordValue},
+    },
+};
 
 /// Cuckoo table config errors.
 #[derive(Debug, Clone, Error, PartialEq)]
@@ -51,7 +60,8 @@ pub enum CuckooTableConfigError {
     #[error("Invalid hash function count")]
     InvalidHashFunctionCount,
 
-    /// Invalid maximum serialized bucket size. Must be greater than zero and less than `HashBucket::serialized_size_with_value_size(0)`.
+    /// Invalid maximum serialized bucket size. Must be greater than zero and less than
+    /// `HashBucket::serialized_size_with_value_size(0)`.
     #[error("Invalid maximum serialized bucket size")]
     InvalidMaxSerializedBucketSize,
 
@@ -73,11 +83,12 @@ pub enum CuckooTableConfigError {
 pub enum BucketCountConfig {
     /// Allow increasing the number of buckets.
     ///
-    /// The load factor measures what fraction of the cuckoo table's capacity is filled with data, as measured by
-    /// serialization size. The target load factor is used to reserve capacity in the cuckoo table at initialization
-    /// and expansion as entries are inserted.
+    /// The load factor measures what fraction of the cuckoo table's capacity is filled with data,
+    /// as measured by serialization size. The target load factor is used to reserve capacity
+    /// in the cuckoo table at initialization and expansion as entries are inserted.
     AllowExpansion {
-        /// Multiplicative factor by which to increase the number of buckets during expansion. Must be > 1.0.
+        /// Multiplicative factor by which to increase the number of buckets during expansion. Must
+        /// be > 1.0.
         expansion_factor: f64,
         /// Fraction of the cuckoo table's capacity to fill with data. Must be in `[0.0, 1.0]`.
         target_load_factor: f64,
@@ -118,7 +129,6 @@ impl CuckooTableConfig {
     /// - `max_eviction_count`: Maximum number of evictions to perform when inserting a new entry.
     /// - `max_serialized_bucket_size`: Maximum size of a serialized bucket, in bytes.
     /// - `bucket_count`: Number of buckets in the cuckoo table.
-    ///
     pub fn new(
         hash_function_count: usize,
         max_eviction_count: usize,
@@ -263,7 +273,6 @@ impl CuckooBucket {
     ///
     /// - `value`: The value to insert.
     /// - `config`: The cuckoo table configuration.
-    ///
     pub fn can_insert(&self, value: &KeywordValue, config: &CuckooTableConfig) -> bool {
         if self.slots.len() >= HashBucket::MAX_SLOT_COUNT {
             return false;
@@ -279,7 +288,6 @@ impl CuckooBucket {
     ///
     /// - `new_value`: The value to insert.
     /// - `config`: The cuckoo table configuration.
-    ///
     pub fn swap_indices(&self, new_value: &Vec<u8>, config: &CuckooTableConfig) -> Vec<usize> {
         let current_values: Vec<&Vec<u8>> = self.slots.iter().map(|entry| &entry.value).collect();
         // Loop over prefixes that include `newValue` but omit a single existing value
@@ -327,8 +335,8 @@ impl EvictIndex {
     }
 }
 
-/// A Cuckoo table is a data structure that stores a set of keyword-value pairs, using cuckoo hashing to resolve
-/// conflicts.
+/// A Cuckoo table is a data structure that stores a set of keyword-value pairs, using cuckoo
+/// hashing to resolve conflicts.
 pub struct CuckooTable {
     /// The configuration for the cuckoo table.
     pub config: CuckooTableConfig,
@@ -527,7 +535,6 @@ impl CuckooTable {
     /// - `hash_index`: The index of the hash, provided by `HashKeyword::hash_indices`.
     ///
     /// # Returns
-    ///
     pub fn index(&self, table_index: usize, hash_index: usize) -> usize {
         if self.table_count() == 1 {
             hash_index
@@ -538,8 +545,9 @@ impl CuckooTable {
 
     /// Expands the cuckoo table.
     ///
-    /// Expansion is only allowed if the configuration allows it. If allowed, the number of buckets is increased by the
-    /// expansion factor. Old entries are rehashed and inserted into the new buckets.
+    /// Expansion is only allowed if the configuration allows it. If allowed, the number of buckets
+    /// is increased by the expansion factor. Old entries are rehashed and inserted into the new
+    /// buckets.
     ///
     /// # Errors
     ///
@@ -628,11 +636,12 @@ impl CuckooTable {
 
 #[cfg(test)]
 mod tests {
-    use crate::private_information_retrieval::cuckoo_table::*;
-    use crate::private_information_retrieval::hash_bucket::HashKeyword;
-    use crate::private_information_retrieval::pir_test_utils::get_test_table;
     use rand::rngs::StdRng;
     use rand_core::SeedableRng;
+
+    use crate::private_information_retrieval::{
+        cuckoo_table::*, hash_bucket::HashKeyword, pir_test_utils::get_test_table,
+    };
 
     fn get_test_cuckoo_table_config(max_serialized_bucket_size: usize) -> CuckooTableConfig {
         CuckooTableConfig {

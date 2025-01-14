@@ -20,7 +20,8 @@
 /// # Parameters
 /// - `value`: The number we divide.
 /// - `divisor`: The number to divide by.
-/// - `variable_time`: Must be `true`, indicating this value and `divisor` are leaked through timing.
+/// - `variable_time`: Must be `true`, indicating this value and `divisor` are leaked through
+///   timing.
 ///
 /// # Returns
 /// `ceil(value / divisor)`.

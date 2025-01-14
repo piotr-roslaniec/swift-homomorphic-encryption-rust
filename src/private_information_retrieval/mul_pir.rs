@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::encryption_parameters::EncryptionParameters;
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::keys::EvaluationKeyConfiguration;
-use crate::private_information_retrieval::index_pir_protocol::IndexPirParameter;
 use std::marker::PhantomData;
+
+use crate::{
+    homomorphic_encryption::{
+        encryption_parameters::EncryptionParameters, he_scheme::HeScheme,
+        keys::EvaluationKeyConfiguration,
+    },
+    private_information_retrieval::index_pir_protocol::IndexPirParameter,
+};
 
 pub enum MulPir<Scheme> {
     _Phantom(PhantomData<Scheme>),

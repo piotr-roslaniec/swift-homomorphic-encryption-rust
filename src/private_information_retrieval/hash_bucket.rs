@@ -14,17 +14,21 @@
 
 //! The `hash_bucket` module provides functionality for managing collections of hash bucket entries,
 //! which are pairs of hashed keywords and their associated values. Hash bucket entries are used by
-//! the `cuckoo_table` module to manage keyword-value pairs using cuckoo hashing. The main components are:
+//! the `cuckoo_table` module to manage keyword-value pairs using cuckoo hashing. The main
+//! components are:
 //!
-//! - `HashBucketEntry`: Represents a single entry in a `HashBucket`, consisting of a hashed keyword and its associated value.
+//! - `HashBucketEntry`: Represents a single entry in a `HashBucket`, consisting of a hashed keyword
+//!   and its associated value.
 //! - `HashBucket`: A collection of `HashBucketEntry` items.
 //! - `HashKeyword`: Provides utility functions for hashing keywords and generating hash indices.
 //!
 //! # Examples
 //!
 //! ```
-//! use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry, HashKeyword};
 //! use eyre::Result;
+//! use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+//!     HashBucket, HashBucketEntry, HashKeyword,
+//! };
 //!
 //! // Create a new hash bucket with some entries
 //! let entries = vec![
@@ -41,15 +45,17 @@
 //! Ok::<(), eyre::Report>(())
 //! ```
 
-use crate::private_information_retrieval::cuckoo_table::{CuckooBucket, CuckooBucketEntry};
 use eyre::Result;
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
+use crate::private_information_retrieval::cuckoo_table::{CuckooBucket, CuckooBucketEntry};
+
 /// An error type for hash bucket operations.
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum HashBucketError {
-    /// An error indicating that the serialized `HashBucket` is empty when we try to deserialize it.
+    /// An error indicating that the serialized `HashBucket` is empty when we try to deserialize
+    /// it.
     #[error("Serialized HashBucket shouldn't be empty.")]
     EmptyBucket,
 
@@ -57,7 +63,8 @@ pub enum HashBucketError {
     #[error("Buffer too small")]
     BufferTooSmall,
 
-    /// An error indicating that the number of slots in the `HashBucket` exceeds the maximum allowed.
+    /// An error indicating that the number of slots in the `HashBucket` exceeds the maximum
+    /// allowed.
     #[error("Slot count exceeds maximum")]
     SlotCountExceedsMaximum,
 
@@ -65,7 +72,8 @@ pub enum HashBucketError {
     #[error("Value size exceeds maximum")]
     ValueSizeExceedsMaximum,
 
-    /// An error indicating that the hash function failed to generate a unique index after `MAX_RETRIES` attempts.
+    /// An error indicating that the hash function failed to generate a unique index after
+    /// `MAX_RETRIES` attempts.
     #[error("Failed to generate unique hash index after {0} attempts")]
     FailedToGenerateUniqueIndex(u8),
 }
@@ -84,7 +92,8 @@ pub type KeywordHash = u64;
 /// The value is a vector of bytes, which can be any arbitrary data.
 pub type HashBucketValue = Vec<u8>;
 
-/// A `HashBucketEntry` represents a single entry in a `HashBucket`, consisting of a hashed keyword and its associated value.
+/// A `HashBucketEntry` represents a single entry in a `HashBucket`, consisting of a hashed keyword
+/// and its associated value.
 ///
 /// # Examples
 ///
@@ -142,21 +151,26 @@ impl HashBucketEntry {
     /// # Arguments
     ///
     /// - `buffer` - A slice of bytes containing the serialized `HashBucketEntry`.
-    /// - `offset` - A mutable reference to the current offset in the buffer. It will be updated to the next offset after deserialization.
+    /// - `offset` - A mutable reference to the current offset in the buffer. It will be updated to
+    ///   the next offset after deserialization.
     ///
     /// # Returns
     ///
-    /// A `Result` containing the deserialized `HashBucketEntry` or a `HashBucketError` if deserialization fails.
+    /// A `Result` containing the deserialized `HashBucketEntry` or a `HashBucketError` if
+    /// deserialization fails.
     ///
     /// # Errors
     ///
-    /// Returns `HashBucketError::BufferTooSmall` if the buffer is too small to deserialize the entry.
+    /// Returns `HashBucketError::BufferTooSmall` if the buffer is too small to deserialize the
+    /// entry.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucketEntry, HashBucketError};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucketEntry, HashBucketError,
+    /// };
     ///
     /// let buffer = vec![1, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 2, 3];
     /// let mut offset = 0;
@@ -201,17 +215,21 @@ impl HashBucketEntry {
     ///
     /// # Returns
     ///
-    /// A `Result` containing a vector of bytes representing the serialized `HashBucketEntry` or a `HashBucketError` if serialization fails.
+    /// A `Result` containing a vector of bytes representing the serialized `HashBucketEntry` or a
+    /// `HashBucketError` if serialization fails.
     ///
     /// # Errors
     ///
-    /// Returns `HashBucketError::ValueSizeExceedsMaximum` if the size of the value exceeds the maximum allowed.
+    /// Returns `HashBucketError::ValueSizeExceedsMaximum` if the size of the value exceeds the
+    /// maximum allowed.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucketEntry, HashBucketError};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucketEntry, HashBucketError,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
     /// let serialized = entry.serialize().unwrap();
@@ -280,13 +298,13 @@ impl HashBucketEntry {
 /// # Examples
 ///
 /// ```
-/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
 /// use eyre::Result;
+/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+///     HashBucket, HashBucketEntry,
+/// };
 ///
-/// let entries = vec![
-///     HashBucketEntry::new(0, vec![0, 1, 2]),
-///     HashBucketEntry::new(1, vec![10, 11, 12]),
-/// ];
+/// let entries =
+///     vec![HashBucketEntry::new(0, vec![0, 1, 2]), HashBucketEntry::new(1, vec![10, 11, 12])];
 /// let bucket = HashBucket::new(&entries)?;
 /// assert_eq!(bucket.slots.len(), 2);
 /// Ok::<(), eyre::Report>(())
@@ -322,7 +340,8 @@ impl HashBucket {
     ///
     /// # Errors
     ///
-    /// Returns `HashBucketError::SlotCountExceedsMaximum` if the number of slots exceeds the maximum allowed.
+    /// Returns `HashBucketError::SlotCountExceedsMaximum` if the number of slots exceeds the
+    /// maximum allowed.
     ///
     /// # Examples
     ///
@@ -351,8 +370,10 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let mut bucket = HashBucket::new(&[])?;
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
@@ -373,8 +394,10 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// let mut bucket = HashBucket::new(&[entry.clone()])?;
@@ -400,8 +423,10 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// let bucket = HashBucket::new(&[entry.clone()])?;
@@ -421,7 +446,8 @@ impl HashBucket {
     ///
     /// # Returns
     ///
-    /// A `Result` containing the deserialized `HashBucket` on success, or a `HashBucketError` on failure.
+    /// A `Result` containing the deserialized `HashBucket` on success, or a `HashBucketError` on
+    /// failure.
     ///
     /// # Errors
     ///
@@ -430,8 +456,10 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// let bucket = HashBucket::new(&[entry.clone()])?;
@@ -440,7 +468,6 @@ impl HashBucket {
     /// assert_eq!(bucket, deserialized);
     /// # Ok::<(), eyre::Report>(())
     /// ```
-
     pub fn deserialize(raw_bucket: &[u8]) -> Result<Self, HashBucketError> {
         if raw_bucket.is_empty() {
             return Err(HashBucketError::EmptyBucket);
@@ -524,13 +551,16 @@ impl HashBucket {
     ///
     /// # Errors
     ///
-    /// Returns `HashBucketError::SlotCountExceedsMaximum` if the number of slots exceeds the maximum allowed.
+    /// Returns `HashBucketError::SlotCountExceedsMaximum` if the number of slots exceeds the
+    /// maximum allowed.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// let bucket = HashBucket::new(&[entry.clone()])?;
@@ -565,8 +595,10 @@ impl HashBucket {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(0, vec![1, 2, 3]);
     /// let bucket = HashBucket::new(&[entry.clone()])?;
@@ -587,13 +619,16 @@ impl HashBucket {
     ///
     /// # Returns
     ///
-    /// An `Option` containing the value associated with the hash, or `None` if the hash is not found.
+    /// An `Option` containing the value associated with the hash, or `None` if the hash is not
+    /// found.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{HashBucket, HashBucketEntry};
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::{
+    ///     HashBucket, HashBucketEntry,
+    /// };
     ///
     /// let entry = HashBucketEntry::new(123456789, vec![1, 2, 3]);
     /// let bucket = HashBucket::new(&[entry.clone()])?;
@@ -601,7 +636,6 @@ impl HashBucket {
     /// assert_eq!(value, Some(vec![1, 2, 3]));
     /// # Ok::<(), eyre::Report>(())
     /// ```
-
     pub fn find_by_hash(&self, hash: u64) -> Option<Vec<u8>> {
         self.slots.iter().find(|item| item.keyword_hash == hash).map(|item| item.value.clone())
     }
@@ -612,8 +646,8 @@ impl HashBucket {
 /// # Examples
 ///
 /// ```
-/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
 /// use eyre::Result;
+/// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
 ///
 /// let keyword = b"example";
 /// let hash = HashKeyword::hash(keyword);
@@ -669,17 +703,19 @@ impl HashKeyword {
     ///
     /// # Returns
     ///
-    /// An array of indices, which are the possible locations for the `keyword` in the `CuckooTable`.
+    /// An array of indices, which are the possible locations for the `keyword` in the
+    /// `CuckooTable`.
     ///
     /// # Errors
     ///
-    /// Returns a `HashBucketError` if the function fails to generate unique indices after `MAX_RETRIES` attempts.
+    /// Returns a `HashBucketError` if the function fails to generate unique indices after
+    /// `MAX_RETRIES` attempts.
     ///
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     ///
     /// let indices = HashKeyword::hash_indices(b"example", 10, 3)?;
     /// assert_eq!(indices.len(), 3);
@@ -703,9 +739,10 @@ impl HashKeyword {
             }
 
             // If we've reached the maximum number of retries, return an error
-            // Note: This is a deviation from the original implementation, which would return the last index generated.
-            // if counter == Self::MAX_RETRIES {
-            //     return Err(HashBucketError::FailedToGenerateUniqueIndex(Self::MAX_RETRIES).into());
+            // Note: This is a deviation from the original implementation, which would return the
+            // last index generated. if counter == Self::MAX_RETRIES {
+            //     return
+            // Err(HashBucketError::FailedToGenerateUniqueIndex(Self::MAX_RETRIES).into());
             // }
 
             candidates.push(bucket_index);
@@ -728,8 +765,8 @@ impl HashKeyword {
     /// # Examples
     ///
     /// ```
-    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     /// use eyre::Result;
+    /// use swift_homomorphic_encryption_rust::private_information_retrieval::hash_bucket::HashKeyword;
     ///
     /// let index = HashKeyword::index_from_hash(123456789, 10, 0)?;
     /// assert!(index < 10);
@@ -754,7 +791,8 @@ impl HashKeyword {
     ///
     /// # Returns
     ///
-    /// A `Result` containing the `u64` value on success, or a `TryFromSliceError` if the conversion fails.
+    /// A `Result` containing the `u64` value on success, or a `TryFromSliceError` if the conversion
+    /// fails.
     pub fn le_bytes_to_u64(bytes: &[u8]) -> Result<u64, std::array::TryFromSliceError> {
         let array: [u8; U64_SIZE] = bytes.try_into()?;
         Ok(u64::from_le_bytes(array))

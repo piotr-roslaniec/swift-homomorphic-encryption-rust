@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::he_scheme::HeScheme;
-use crate::homomorphic_encryption::keys::{EvaluationKeyConfiguration, SecretKey};
-use crate::private_information_retrieval::keyword_pir_protocol::KeywordPirParameter;
 use std::marker::PhantomData;
+
+use crate::{
+    homomorphic_encryption::{
+        he_scheme::HeScheme,
+        keys::{EvaluationKeyConfiguration, SecretKey},
+    },
+    private_information_retrieval::keyword_pir_protocol::KeywordPirParameter,
+};
 
 pub enum PirAlgorithm {
     /// PIR using ciphertext word decomposition.

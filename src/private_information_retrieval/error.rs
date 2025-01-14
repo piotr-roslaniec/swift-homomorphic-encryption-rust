@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::private_information_retrieval::cuckoo_table::{
-    CuckooTableConfigError, CuckooTableError,
-};
-use crate::private_information_retrieval::hash_bucket::HashBucketError;
-use crate::private_information_retrieval::keyword_database::KeywordDatabaseError;
 use thiserror::Error;
+
+use crate::private_information_retrieval::{
+    cuckoo_table::{CuckooTableConfigError, CuckooTableError},
+    hash_bucket::HashBucketError,
+    keyword_database::KeywordDatabaseError,
+};
 
 #[derive(Debug, Clone, Error, PartialEq)]
 pub enum PirError {

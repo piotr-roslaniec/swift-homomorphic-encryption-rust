@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::homomorphic_encryption::context::Context;
-use crate::homomorphic_encryption::keys::SecretKey;
+use crate::homomorphic_encryption::{context::Context, keys::SecretKey};
 
 pub trait HeScheme: Sized {
     type CanonicalCiphertext;
@@ -27,7 +26,6 @@ pub trait HeScheme: Sized {
     /// # Returns
     ///
     /// A `SecretKey` for the given `Context`.
-    ///
     fn generate_secret_key(_context: &Context<Self>) -> SecretKey<Self> {
         todo!()
     }
