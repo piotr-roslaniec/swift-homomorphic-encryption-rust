@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+use crate::homomorphic_encryption::scalar::ScalarType;
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
+/// Stores pre-computed data for efficient modular operations.
+///
+/// # Warning
+///
+/// - The operations may leak the modules through timing or other side channels. Use this structure
+///   only for public moduli.
+pub struct Modulus<T: ScalarType> {
+    _marker: std::marker::PhantomData<T>,
+}
 
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
-#[cfg(test)]
-mod test_utilities;
+/// Pre-computed factor for fast modular reduction.
+pub struct ReduceModulus<T: ScalarType> {
+    _marker: std::marker::PhantomData<T>,
+}
