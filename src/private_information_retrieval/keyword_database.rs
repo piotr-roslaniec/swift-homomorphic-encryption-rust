@@ -369,11 +369,11 @@ impl KeywordDatabase {
 }
 
 /// Arguments for processing a keyword database.
-pub struct Arguments<Scheme> {
+pub struct Arguments<Scheme: HeScheme> {
     /// Configuration for the keyword database.
     database_config: KeywordDatabaseConfig,
     /// Encryption parameters
-    encryption_parameters: EncryptionParameters,
+    encryption_parameters: EncryptionParameters<Scheme>,
     /// PIR algorithm to process with.
     algorithm: PirAlgorithm,
     /// Number of test queries per shard.
@@ -393,7 +393,7 @@ impl<Scheme: HeScheme> Arguments<Scheme> {
     /// - `trials_per_shard`: Number of test queries per shard.
     pub fn new(
         database_config: KeywordDatabaseConfig,
-        encryption_parameters: EncryptionParameters,
+        encryption_parameters: EncryptionParameters<Scheme>,
         algorithm: PirAlgorithm,
         trials_per_shard: usize,
     ) -> Self {
@@ -443,14 +443,14 @@ impl<Scheme: HeScheme> ShardValidationResult<Scheme> {
 }
 
 /// A processed keyword database.
-pub struct Processed<Scheme> {
+pub struct Processed<Scheme: HeScheme> {
     /// Evaluation key configuration.
     evaluation_key_config: EvaluationKeyConfiguration,
     /// Maps each shard_id to the associated database shard and PIR parameters.
     shards: HashMap<String, ProcessedDatabaseWithParameters<Scheme>>,
 }
 
-impl<Scheme> Processed<Scheme> {
+impl<Scheme: HeScheme> Processed<Scheme> {
     /// Creates a new `Processed` keyword database.
     ///
     /// # Parameters
@@ -541,7 +541,7 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
 
         let compute_times: Vec<f64> = (0..trials)
             .map(|trial| {
-                let secret_key = Scheme::generate_secret_key(context);
+                let secret_key = Scheme::generate_secret_key(context)?;
                 let trial_evaluation_key = client.generate_evaluation_key(&secret_key);
                 let trial_query = client.generate_query(&row.keyword, &secret_key)?;
 
@@ -555,7 +555,7 @@ impl<Scheme: HeScheme> ProcessKeywordDatabase<Scheme> {
                 let decrypted_response = client.decrypt(&response, &row.keyword, &secret_key)?;
                 if decrypted_response != row.value {
                     let noise_budget = response.noise_budget(&secret_key, true);
-                    if noise_budget < Scheme::min_noise_budget() {
+                    if noise_budget < Scheme::MIN_NOISE_BUDGET {
                         return Err(
                             KeywordDatabaseError::InsufficientNoiseBudget(noise_budget).into()
                         );

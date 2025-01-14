@@ -15,8 +15,15 @@
 //! Contains the homomorphic encryption scheme and related functionality.
 // TODO: Add module documentation
 // TODO: Update crate visibility
+pub(crate) mod array_2d;
+pub(crate) mod bfv;
+pub(crate) mod ciphertext;
 pub(crate) mod context;
 pub(crate) mod encryption_parameters;
 pub(crate) mod he_scheme;
 pub(crate) mod keys;
+pub(crate) mod modulus;
+pub(crate) mod plaintext;
+pub(crate) mod poly_rq;
 pub(crate) mod scalar;
+pub(crate) mod serialized_plaintext;

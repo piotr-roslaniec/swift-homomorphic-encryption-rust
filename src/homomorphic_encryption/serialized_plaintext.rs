@@ -12,14 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![warn(missing_docs)]
-#![allow(dead_code)]
+/// Serialized ``Plaintext`` type.
+pub struct SerializedPlaintext {
+    /// The serialized polynomial.
+    pub poly: Vec<u8>,
+}
 
-//! Swift Homomorphic Encryption Rust
-//! TODO: Add crate-level documentation
-
-pub mod private_information_retrieval;
-
-pub(crate) mod homomorphic_encryption;
-#[cfg(test)]
-mod test_utilities;
+impl SerializedPlaintext {
+    /// Creates a serialized plaintext.
+    ///
+    /// # Parameters
+    ///
+    /// - `poly`: Serialized polynomial.
+    pub fn new(poly: &[u8]) -> Self {
+        Self { poly: poly.to_vec() }
+    }
+}

@@ -12,4 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub struct EncryptionParameters {}
+use crate::homomorphic_encryption::he_scheme::HeScheme;
+
+pub struct EncryptionParameters<Scheme: HeScheme> {
+    _market: std::marker::PhantomData<Scheme>,
+}
+
+impl<Scheme: HeScheme> EncryptionParameters<Scheme> {
+    pub fn new() -> Self {
+        todo!()
+    }
+}

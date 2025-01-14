@@ -12,23 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::marker::PhantomData;
-
 use crate::homomorphic_encryption::{
     encryption_parameters::EncryptionParameters, he_scheme::HeScheme,
+    poly_rq::poly_context::PolyContext,
 };
 
 /// Pre-computation for the HE operations.
 ///
 /// HE operations are typically only supported between objects, such as ``Ciphertext``,
 /// ``Plaintext``, ``EvaluationKey``, ``SecretKey``,  with the same context.
+#[derive(Clone)]
 pub struct Context<Scheme: HeScheme> {
-    _marker: PhantomData<Scheme>,
+    _marker: std::marker::PhantomData<Scheme>,
 }
+
+impl<Scheme: HeScheme> Context<Scheme> {}
 
 impl<Scheme: HeScheme> Context<Scheme> {
     /// Creates a new `Context`.
-    pub fn new(_encryption_parameters: &EncryptionParameters) -> Self {
+    pub fn new(_encryption_parameters: &EncryptionParameters<Scheme>) -> Self {
+        todo!()
+    }
+
+    /// Top-level ciphertext context.
+    pub fn ciphertext_context(&self) -> PolyContext<Scheme::Scalar> {
+        todo!()
+    }
+
+    pub(crate) fn bytes_per_plaintext(&self) -> usize {
         todo!()
     }
 }
