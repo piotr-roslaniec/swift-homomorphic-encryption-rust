@@ -16,6 +16,7 @@
 // TODO: Add module documentation
 // TODO: Update crate visibility
 pub(crate) mod context;
+pub(crate) mod double_width_uint;
 pub(crate) mod encryption_parameters;
 pub(crate) mod he_scheme;
 pub(crate) mod keys;

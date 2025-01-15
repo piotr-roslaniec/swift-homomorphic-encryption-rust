@@ -20,6 +20,8 @@ thiserror   ="1.0.63"
 serde       ={ version="1.0.205", features=["derive"] }
 serde_derive="1.0.205"
 serde_json  ="1.0.122"
+ruint       ="1.12.4"
+derive_more ={ version="1.0.0", features=["full"] }
 
 [dev-dependencies]
 criterion="0.5.1"
